@@ -1404,3 +1404,39 @@ hr {
 .ri-tarjeta > :not(.ri-marca-agua) {
   position: relative;
 }
+
+/* Aviso: día anterior sin cerrar / cambió el día */
+.aviso-pendiente {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f6e3de;
+  border: 1px solid rgba(161, 61, 44, 0.25);
+  color: var(--rust);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.aviso-pendiente strong {
+  font-size: 15px;
+}
+
+.aviso-pendiente span {
+  color: #7a2c1f;
+}
+
+.aviso-pendiente button {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-radius: 6px;
+  background: var(--rust);
+  color: #fff;
+  cursor: pointer;
+}

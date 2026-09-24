@@ -5,11 +5,19 @@ import { SkeletonLista } from './SkeletonLista'
 
 type Gasto = Database['public']['Tables']['gastos']['Row']
 
-export function GastosList({ gastos, loading }: { gastos: Gasto[]; loading: boolean }) {
+export function GastosList({
+  gastos,
+  loading,
+  titulo = 'Gastos de hoy',
+}: {
+  gastos: Gasto[]
+  loading: boolean
+  titulo?: string
+}) {
   if (loading) {
     return (
       <div className="movimientos-list">
-        <h2>Gastos de hoy</h2>
+        <h2>{titulo}</h2>
         <SkeletonLista />
       </div>
     )
@@ -20,7 +28,7 @@ export function GastosList({ gastos, loading }: { gastos: Gasto[]; loading: bool
   return (
     <div className="movimientos-list">
       <h2>
-        Gastos de hoy ({gastos.length}) — total {formatMonto(total)}
+        {titulo} ({gastos.length}) — total {formatMonto(total)}
       </h2>
       {gastos.length === 0 ? (
         <p>Todavía no hay gastos cargados.</p>

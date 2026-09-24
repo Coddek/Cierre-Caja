@@ -11,11 +11,14 @@ import { ResumenDelDia } from './components/ResumenDelDia'
 import { CierreDelDia } from './components/CierreDelDia'
 import { AbrirDia } from './components/AbrirDia'
 import { Historial } from './components/Historial'
+import { DiaPendiente } from './components/DiaPendiente'
 import { Modal } from './components/Modal'
 import { SkeletonResumen } from './components/SkeletonLista'
 import { useVentasHoy } from './hooks/useVentasHoy'
 import { useGastosHoy } from './hooks/useGastosHoy'
 import { useCierreHoy } from './hooks/useCierreHoy'
+import { useDiaPendiente } from './hooks/useDiaPendiente'
+import { useCambioDeDia } from './hooks/useCambioDeDia'
 import { getFechaHoy } from './lib/fecha'
 import { supabase } from './lib/supabase'
 import './App.css'
@@ -30,6 +33,8 @@ function App() {
   const { ventas, loading: loadingVentas } = useVentasHoy(fechaHoy, !!session)
   const { gastos, loading: loadingGastos } = useGastosHoy(fechaHoy, !!session)
   const { cierre, loading: loadingCierre } = useCierreHoy(fechaHoy, !!session)
+  const { pendiente, loading: loadingPendiente } = useDiaPendiente(fechaHoy, !!session)
+  const cambioDeDia = useCambioDeDia(fechaHoy)
 
   if (loading) {
     return <div className="loading-screen">Cargando...</div>
@@ -79,10 +84,22 @@ function App() {
       </nav>
 
       <main>
+        {cambioDeDia && (
+          <div className="aviso-pendiente">
+            <strong>Ya es otro día.</strong>
+            <span>Si terminaste con el día anterior, pasá al día nuevo.</span>
+            <button type="button" onClick={() => window.location.reload()}>
+              Pasar al día nuevo
+            </button>
+          </div>
+        )}
+
         {vista === 'historial' ? (
           <Historial />
-        ) : loadingCierre ? (
+        ) : loadingCierre || loadingPendiente ? (
           <SkeletonResumen />
+        ) : pendiente ? (
+          <DiaPendiente key={pendiente} fecha={pendiente} />
         ) : diaCerrado ? (
           <CierreDelDia fecha={fechaHoy} cierre={cierre} ventas={ventas} gastos={gastos} />
         ) : diaSinAbrir ? (

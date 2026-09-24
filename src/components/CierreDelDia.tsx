@@ -25,15 +25,18 @@ export function CierreDelDia({
   cierre,
   ventas,
   gastos,
+  arqueoAbierto = false,
 }: {
   fecha: string
   cierre: CierreConEditor | null
   ventas: Venta[]
   gastos: Gasto[]
+  // Mostrar el arqueo directamente, sin el botón "Cerrar el día" (día pendiente).
+  arqueoAbierto?: boolean
 }) {
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [pidiendoArqueo, setPidiendoArqueo] = useState(false)
+  const [pidiendoArqueo, setPidiendoArqueo] = useState(arqueoAbierto)
   const [retiro, setRetiro] = useState('')
   const [quedaEnCaja, setQuedaEnCaja] = useState('')
   const [confirmandoReabrir, setConfirmandoReabrir] = useState(false)
