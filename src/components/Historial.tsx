@@ -110,22 +110,30 @@ export function Historial() {
                   </p>
                 )}
                 <div className="stats-row stats-row--compacto">
-                  <div className="stat">
-                    <span className="stat-label">Efectivo</span>
-                    <span className="stat-valor">{formatMonto(c.total_efectivo)}</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">Transf.</span>
-                    <span className="stat-valor">{formatMonto(c.total_transferencia)}</span>
-                  </div>
-                  <div className="stat">
-                    <span className="stat-label">Tarjeta</span>
-                    <span className="stat-valor">{formatMonto(c.total_tarjeta)}</span>
-                  </div>
+                  {Object.entries((c.totales_por_medio ?? {}) as Record<string, number>)
+                    .sort(([a], [b]) => a.localeCompare(b))
+                    .map(([medio, total]) => (
+                      <div className="stat" key={medio}>
+                        <span className="stat-label">{medio}</span>
+                        <span className="stat-valor">{formatMonto(total)}</span>
+                      </div>
+                    ))}
                   <div className="stat">
                     <span className="stat-label">Gastos</span>
                     <span className="stat-valor">{formatMonto(c.total_gastos)}</span>
                   </div>
+                  {c.caja_inicial != null && (
+                    <div className="stat">
+                      <span className="stat-label">Caja inicial</span>
+                      <span className="stat-valor">{formatMonto(c.caja_inicial)}</span>
+                    </div>
+                  )}
+                  {c.caja_final != null && (
+                    <div className="stat">
+                      <span className="stat-label">Caja final</span>
+                      <span className="stat-valor">{formatMonto(c.caja_final)}</span>
+                    </div>
+                  )}
                 </div>
               </li>
             ))}

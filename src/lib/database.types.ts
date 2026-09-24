@@ -41,51 +41,54 @@ export type Database = {
     Tables: {
       cierres: {
         Row: {
+          caja_final: number | null
+          caja_inicial: number | null
           cerrado: boolean
           created_at: string
+          diferencia_caja: number | null
           fecha: string
           ganancia_neta: number
           id: string
           notas: string | null
           reabierto_en: string | null
           reabierto_por: string | null
-          total_efectivo: number
           total_gastos: number
-          total_tarjeta: number
-          total_transferencia: number
           total_ventas: number
+          totales_por_medio: Json
           updated_at: string
         }
         Insert: {
+          caja_final?: number | null
+          caja_inicial?: number | null
           cerrado?: boolean
           created_at?: string
+          diferencia_caja?: number | null
           fecha: string
           ganancia_neta?: number
           id?: string
           notas?: string | null
           reabierto_en?: string | null
           reabierto_por?: string | null
-          total_efectivo?: number
           total_gastos?: number
-          total_tarjeta?: number
-          total_transferencia?: number
           total_ventas?: number
+          totales_por_medio?: Json
           updated_at?: string
         }
         Update: {
+          caja_final?: number | null
+          caja_inicial?: number | null
           cerrado?: boolean
           created_at?: string
+          diferencia_caja?: number | null
           fecha?: string
           ganancia_neta?: number
           id?: string
           notas?: string | null
           reabierto_en?: string | null
           reabierto_por?: string | null
-          total_efectivo?: number
           total_gastos?: number
-          total_tarjeta?: number
-          total_transferencia?: number
           total_ventas?: number
+          totales_por_medio?: Json
           updated_at?: string
         }
         Relationships: [
@@ -146,6 +149,54 @@ export type Database = {
           fecha?: string
           id?: string
           monto?: number
+        }
+        Relationships: []
+      }
+      marcas: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
+        }
+        Relationships: []
+      }
+      medios_pago: {
+        Row: {
+          activo: boolean
+          created_at: string
+          id: string
+          nombre: string
+          orden: number
+        }
+        Insert: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre: string
+          orden?: number
+        }
+        Update: {
+          activo?: boolean
+          created_at?: string
+          id?: string
+          nombre?: string
+          orden?: number
         }
         Relationships: []
       }
@@ -212,7 +263,9 @@ export type Database = {
           fecha: string
           id: string
           medio_pago: string
+          medio_pago_2: string | null
           monto: number
+          monto_2: number | null
         }
         Insert: {
           created_at?: string
@@ -220,7 +273,9 @@ export type Database = {
           fecha?: string
           id?: string
           medio_pago: string
+          medio_pago_2?: string | null
           monto: number
+          monto_2?: number | null
         }
         Update: {
           created_at?: string
@@ -228,31 +283,49 @@ export type Database = {
           fecha?: string
           id?: string
           medio_pago?: string
+          medio_pago_2?: string | null
           monto?: number
+          monto_2?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "ventas_medio_pago_2_fkey"
+            columns: ["medio_pago_2"]
+            isOneToOne: false
+            referencedRelation: "medios_pago"
+            referencedColumns: ["nombre"]
+          },
+          {
+            foreignKeyName: "ventas_medio_pago_fkey"
+            columns: ["medio_pago"]
+            isOneToOne: false
+            referencedRelation: "medios_pago"
+            referencedColumns: ["nombre"]
+          },
+        ]
       }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      cerrar_dia: {
-        Args: { p_fecha: string }
+      abrir_dia: {
+        Args: { p_caja_inicial: number; p_fecha: string }
         Returns: {
+          caja_final: number | null
+          caja_inicial: number | null
           cerrado: boolean
           created_at: string
+          diferencia_caja: number | null
           fecha: string
           ganancia_neta: number
           id: string
           notas: string | null
           reabierto_en: string | null
           reabierto_por: string | null
-          total_efectivo: number
           total_gastos: number
-          total_tarjeta: number
-          total_transferencia: number
           total_ventas: number
+          totales_por_medio: Json
           updated_at: string
         }
         SetofOptions: {
@@ -262,22 +335,50 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      reabrir_dia: {
-        Args: { p_fecha: string }
+      cerrar_dia: {
+        Args: { p_caja_final: number; p_fecha: string }
         Returns: {
+          caja_final: number | null
+          caja_inicial: number | null
           cerrado: boolean
           created_at: string
+          diferencia_caja: number | null
           fecha: string
           ganancia_neta: number
           id: string
           notas: string | null
           reabierto_en: string | null
           reabierto_por: string | null
-          total_efectivo: number
           total_gastos: number
-          total_tarjeta: number
-          total_transferencia: number
           total_ventas: number
+          totales_por_medio: Json
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "cierres"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      is_usuario_caja: { Args: { uid: string }; Returns: boolean }
+      reabrir_dia: {
+        Args: { p_fecha: string }
+        Returns: {
+          caja_final: number | null
+          caja_inicial: number | null
+          cerrado: boolean
+          created_at: string
+          diferencia_caja: number | null
+          fecha: string
+          ganancia_neta: number
+          id: string
+          notas: string | null
+          reabierto_en: string | null
+          reabierto_por: string | null
+          total_gastos: number
+          total_ventas: number
+          totales_por_medio: Json
           updated_at: string
         }
         SetofOptions: {

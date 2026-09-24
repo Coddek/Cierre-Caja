@@ -9,6 +9,7 @@ import { GastoForm } from './components/GastoForm'
 import { GastosList } from './components/GastosList'
 import { ResumenDelDia } from './components/ResumenDelDia'
 import { CierreDelDia } from './components/CierreDelDia'
+import { AbrirDia } from './components/AbrirDia'
 import { Historial } from './components/Historial'
 import { Modal } from './components/Modal'
 import { SkeletonResumen } from './components/SkeletonLista'
@@ -43,6 +44,7 @@ function App() {
   }
 
   const diaCerrado = cierre?.cerrado ?? false
+  const diaSinAbrir = !diaCerrado && (cierre?.caja_inicial ?? null) == null
 
   return (
     <div className="app-shell">
@@ -82,10 +84,12 @@ function App() {
         ) : loadingCierre ? (
           <SkeletonResumen />
         ) : diaCerrado ? (
-          <CierreDelDia fecha={fechaHoy} cierre={cierre} />
+          <CierreDelDia fecha={fechaHoy} cierre={cierre} ventas={ventas} />
+        ) : diaSinAbrir ? (
+          <AbrirDia fecha={fechaHoy} />
         ) : (
           <>
-            <ResumenDelDia ventas={ventas} gastos={gastos} />
+            <ResumenDelDia ventas={ventas} gastos={gastos} cajaInicial={cierre?.caja_inicial ?? null} />
 
             <div className="acciones-carga">
               <button
@@ -108,7 +112,7 @@ function App() {
 
             <hr />
 
-            <CierreDelDia fecha={fechaHoy} cierre={cierre} />
+            <CierreDelDia fecha={fechaHoy} cierre={cierre} ventas={ventas} />
           </>
         )}
       </main>
