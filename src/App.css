@@ -1440,3 +1440,42 @@ hr {
   color: #fff;
   cursor: pointer;
 }
+
+/* ---------- pantalla de error (ErrorBoundary) ---------- */
+
+.pantalla-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 100dvh;
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--ink);
+}
+
+.pantalla-error p {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.pantalla-error button {
+  padding: 13px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  background: var(--ink);
+  color: var(--paper);
+  cursor: pointer;
+}
+
+.pantalla-error small {
+  max-width: 320px;
+  font-size: 11px;
+  color: var(--ink-faint);
+  overflow-wrap: anywhere;
+}
