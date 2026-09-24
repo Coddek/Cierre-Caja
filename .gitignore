@@ -28,3 +28,6 @@ Iconos/
 *.njsproj
 *.sln
 *.sw?
+
+# lock temporal de Claude Code
+.claude/scheduled_tasks.lock
