@@ -2,6 +2,7 @@ import { Fragment } from 'react'
 import type { Database } from '../lib/database.types'
 import { formatMonto } from '../lib/format'
 import { calcularTotalesPorMedio } from '../lib/totalesPorMedio'
+import { CajaInicialEditable } from './CajaInicialEditable'
 
 type Venta = Database['public']['Tables']['ventas']['Row']
 type Gasto = Database['public']['Tables']['gastos']['Row']
@@ -10,10 +11,12 @@ type Gasto = Database['public']['Tables']['gastos']['Row']
 // No persiste nada ni toca la tabla `cierres` — eso solo pasa al llamar
 // cerrar_dia(), que es el snapshot real y definitivo del día.
 export function ResumenDelDia({
+  fecha,
   ventas,
   gastos,
   cajaInicial,
 }: {
+  fecha: string
   ventas: Venta[]
   gastos: Gasto[]
   cajaInicial: number | null
@@ -30,9 +33,7 @@ export function ResumenDelDia({
     <div className="resumen-dia">
       <h2>Resumen de hoy</h2>
 
-      {cajaInicial != null && (
-        <p className="caja-inicial-badge">Caja inicial: {formatMonto(cajaInicial)}</p>
-      )}
+      {cajaInicial != null && <CajaInicialEditable fecha={fecha} cajaInicial={cajaInicial} />}
 
       {medios.length > 0 && (
         <dl className="resumen-desglose">

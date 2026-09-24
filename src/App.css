@@ -1171,3 +1171,21 @@ hr {
   color: var(--ink-soft);
   margin-bottom: 8px;
 }
+
+.caja-inicial-editar {
+  background: none;
+  border: none;
+  padding: 0 0 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.caja-inicial-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}

@@ -89,7 +89,7 @@ function App() {
           <AbrirDia fecha={fechaHoy} />
         ) : (
           <>
-            <ResumenDelDia ventas={ventas} gastos={gastos} cajaInicial={cierre?.caja_inicial ?? null} />
+            <ResumenDelDia fecha={fechaHoy} ventas={ventas} gastos={gastos} cajaInicial={cierre?.caja_inicial ?? null} />
 
             <div className="acciones-carga">
               <button
