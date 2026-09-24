@@ -135,6 +135,16 @@ hr {
   opacity: 0.55;
 }
 
+.login-form button.login-link-secundario {
+  background: none;
+  color: var(--ink-soft);
+  font-weight: 500;
+  font-size: 13px;
+  padding: 4px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .mensaje-error {
   display: flex;
   align-items: flex-start;

@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useAuth } from './contexts/AuthContext'
 import { Login } from './components/Login'
+import { DefinirPassword } from './components/DefinirPassword'
+import { detectarTipoAuthUrl } from './lib/authUrl'
 import { VentaForm } from './components/VentaForm'
 import { VentasList } from './components/VentasList'
 import { GastoForm } from './components/GastoForm'
@@ -21,6 +23,7 @@ const fechaHoy = getFechaHoy()
 
 function App() {
   const { session, nombre, loading } = useAuth()
+  const [tipoAuthUrl, setTipoAuthUrl] = useState(detectarTipoAuthUrl)
   const [vista, setVista] = useState<'hoy' | 'historial'>('hoy')
   const [modalAbierto, setModalAbierto] = useState<'venta' | 'gasto' | null>(null)
   const { ventas, loading: loadingVentas } = useVentasHoy(fechaHoy, !!session)
@@ -29,6 +32,10 @@ function App() {
 
   if (loading) {
     return <div className="loading-screen">Cargando...</div>
+  }
+
+  if (tipoAuthUrl && session) {
+    return <DefinirPassword onListo={() => setTipoAuthUrl(null)} />
   }
 
   if (!session) {
