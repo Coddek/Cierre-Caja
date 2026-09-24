@@ -4,6 +4,14 @@ App de cierre de caja diario para un local comercial: reemplaza la hoja del cuad
 
 **En producción:** https://cierre-caja-drab.vercel.app (uso interno del local: el acceso es solo por invitación)
 
+<p align="center">
+  <img src="docs/carga.png" width="200" alt="Día abierto: resumen y ventas cargadas">
+  <img src="docs/arqueo.png" width="200" alt="Cierre: total de ventas, cuenta del efectivo y arqueo">
+  <img src="docs/cerrado.png" width="200" alt="Día cerrado con la caja coincidiendo">
+  <img src="docs/resumen.png" width="200" alt="Resumen del día como imagen para WhatsApp">
+</p>
+<p align="center"><sub>Capturas con datos de ejemplo.</sub></p>
+
 ## Funcionalidades
 
 - **Apertura del día** con la caja inicial (el efectivo para dar vuelto), que se propone sola a partir de lo que quedó en la caja el día anterior

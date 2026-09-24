@@ -6,7 +6,6 @@ import type { CierreConEditor } from '../lib/types'
 type ResumenMes = {
   totalVentas: number
   totalGastos: number
-  gananciaNeta: number
   dias: number
 }
 
@@ -14,10 +13,9 @@ function agruparPorMes(cierres: CierreConEditor[]): [string, ResumenMes][] {
   const meses = new Map<string, ResumenMes>()
   for (const c of cierres) {
     const mes = c.fecha.slice(0, 7) // "YYYY-MM"
-    const actual = meses.get(mes) ?? { totalVentas: 0, totalGastos: 0, gananciaNeta: 0, dias: 0 }
+    const actual = meses.get(mes) ?? { totalVentas: 0, totalGastos: 0, dias: 0 }
     actual.totalVentas += c.total_ventas
     actual.totalGastos += c.total_gastos
-    actual.gananciaNeta += c.ganancia_neta
     actual.dias += 1
     meses.set(mes, actual)
   }
@@ -67,16 +65,12 @@ export function Historial() {
                 </div>
                 <div className="stats-row">
                   <div className="stat">
-                    <span className="stat-label">Ventas</span>
-                    <span className="stat-valor">{formatMonto(r.totalVentas)}</span>
-                  </div>
-                  <div className="stat">
                     <span className="stat-label">Gastos</span>
                     <span className="stat-valor">{formatMonto(r.totalGastos)}</span>
                   </div>
                   <div className="stat stat--destacado">
-                    <span className="stat-label">Ganancia</span>
-                    <span className="stat-valor">{formatMonto(r.gananciaNeta)}</span>
+                    <span className="stat-label">Ventas</span>
+                    <span className="stat-valor">{formatMonto(r.totalVentas)}</span>
                   </div>
                 </div>
               </li>
@@ -95,7 +89,7 @@ export function Historial() {
               <li key={c.id} className="dia-card">
                 <div className="dia-header">
                   <span className="dia-fecha">{c.fecha}</span>
-                  <span className="dia-ganancia">{formatMonto(c.ganancia_neta)}</span>
+                  <span className="dia-ganancia">{formatMonto(c.total_ventas)}</span>
                 </div>
                 {c.reabierto_en && (
                   <p className="editado-badge">

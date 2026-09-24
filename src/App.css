@@ -343,8 +343,8 @@ hr {
   font-weight: 700;
 }
 
-.resumen-dia dt.ganancia,
-.resumen-dia dd.ganancia {
+.resumen-dia dt.destacado,
+.resumen-dia dd.destacado {
   font-size: 1.4em;
   border-top: 1px solid var(--mint);
   padding-top: 10px;
