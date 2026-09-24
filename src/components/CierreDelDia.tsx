@@ -2,44 +2,63 @@ import { Fragment, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatMonto } from '../lib/format'
 import { mensajeError } from '../lib/errors'
-import { calcularTotalesPorMedio } from '../lib/totalesPorMedio'
+import { MEDIO_EFECTIVO, calcularEfectivoEsperado, ordenarMedios } from '../lib/totalesPorMedio'
 import { ConfirmDialog } from './ConfirmDialog'
+import { DesgloseCuentas } from './DesgloseCuentas'
 import type { CierreConEditor } from '../lib/types'
 import type { Database } from '../lib/database.types'
 
 type Venta = Database['public']['Tables']['ventas']['Row']
+type Gasto = Database['public']['Tables']['gastos']['Row']
+
+// Diferencia entre lo contado y lo esperado, en palabras.
+function textoDiferencia(diferencia: number) {
+  if (Math.abs(diferencia) < 0.01) return '✓ La caja coincide con lo esperado'
+  return diferencia < 0
+    ? `⚠ Faltan ${formatMonto(-diferencia)} en la caja`
+    : `⚠ Sobran ${formatMonto(diferencia)} en la caja`
+}
 
 export function CierreDelDia({
   fecha,
   cierre,
   ventas,
+  gastos,
 }: {
   fecha: string
   cierre: CierreConEditor | null
   ventas: Venta[]
+  gastos: Gasto[]
 }) {
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [pidiendoCajaFinal, setPidiendoCajaFinal] = useState(false)
-  const [cajaFinal, setCajaFinal] = useState('')
+  const [pidiendoArqueo, setPidiendoArqueo] = useState(false)
+  const [retiro, setRetiro] = useState('')
+  const [quedaEnCaja, setQuedaEnCaja] = useState('')
   const [confirmandoReabrir, setConfirmandoReabrir] = useState(false)
 
   async function handleCerrar() {
-    const monto = Number(cajaFinal)
-    if (cajaFinal.trim() === '' || monto < 0) {
-      setError('Ingresá cuánto contaste en la caja (puede ser 0).')
+    const montoRetiro = Number(retiro)
+    const montoQueda = Number(quedaEnCaja)
+    if (retiro.trim() === '' || montoRetiro < 0 || quedaEnCaja.trim() === '' || montoQueda < 0) {
+      setError('Completá cuánto se retira y cuánto queda en la caja (pueden ser 0).')
       return
     }
     setWorking(true)
     setError(null)
-    const { error: rpcError } = await supabase.rpc('cerrar_dia', { p_fecha: fecha, p_caja_final: monto })
+    const { error: rpcError } = await supabase.rpc('cerrar_dia', {
+      p_fecha: fecha,
+      p_retiro: montoRetiro,
+      p_caja_final: montoQueda,
+    })
     setWorking(false)
     if (rpcError) {
       setError(mensajeError(rpcError))
       return
     }
-    setPidiendoCajaFinal(false)
-    setCajaFinal('')
+    setPidiendoArqueo(false)
+    setRetiro('')
+    setQuedaEnCaja('')
   }
 
   async function handleReabrir() {
@@ -51,28 +70,35 @@ export function CierreDelDia({
     if (rpcError) setError(mensajeError(rpcError))
   }
 
+  const cajaInicial = cierre?.caja_inicial ?? 0
+
   if (!cierre || !cierre.cerrado) {
-    const efectivoCargado = calcularTotalesPorMedio(ventas)['Efectivo'] ?? 0
-    const cajaInicial = cierre?.caja_inicial ?? 0
-    const esperadoEnCaja = cajaInicial + efectivoCargado
+    const esperado = calcularEfectivoEsperado(ventas, gastos, cajaInicial)
+    const completo = retiro.trim() !== '' && quedaEnCaja.trim() !== ''
+    const contado = Number(retiro) + Number(quedaEnCaja)
 
     return (
       <div className="cierre-dia">
-        {!pidiendoCajaFinal ? (
-          <button type="button" onClick={() => setPidiendoCajaFinal(true)}>
+        {!pidiendoArqueo ? (
+          <button type="button" onClick={() => setPidiendoArqueo(true)}>
             Cerrar el día
           </button>
         ) : (
           <div className="pedir-caja-final">
+            <h2>Cierre de caja</h2>
             <p className="caja-esperada-nota">
-              Según lo cargado hoy, en la caja debería haber{' '}
-              <strong>{formatMonto(esperadoEnCaja)}</strong> en efectivo (caja inicial{' '}
-              {formatMonto(cajaInicial)} + ventas en efectivo {formatMonto(efectivoCargado)}). Contá la
-              plata real de la caja y poné cuánto da abajo — si no coincide, es una señal de que algo no
-              se cargó bien (o de un error al dar vuelto).
+              Revisá cada cuenta contra el cuaderno. Tocá un medio de pago para ver qué ventas está
+              sumando.
+            </p>
+
+            <DesgloseCuentas ventas={ventas} gastos={gastos} cajaInicial={cajaInicial} />
+
+            <p className="caja-esperada-nota">
+              Contá la plata de la caja y separá lo que se retira de lo que queda para dar vuelto
+              mañana.
             </p>
             <label className="campo-monto">
-              <span>¿Cuánto contaste en la caja?</span>
+              <span>Plata que se retira</span>
               <div className="input-monto-wrap">
                 <span className="input-monto-simbolo">$</span>
                 <input
@@ -81,18 +107,56 @@ export function CierreDelDia({
                   step="0.01"
                   min="0"
                   placeholder="0"
-                  value={cajaFinal}
-                  onChange={(e) => setCajaFinal(e.target.value)}
+                  value={retiro}
+                  onChange={(e) => setRetiro(e.target.value)}
                   autoFocus
                 />
               </div>
             </label>
+            <label className="campo-monto">
+              <span>Queda en la caja (para mañana)</span>
+              <div className="input-monto-wrap">
+                <span className="input-monto-simbolo">$</span>
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.01"
+                  min="0"
+                  placeholder="0"
+                  value={quedaEnCaja}
+                  onChange={(e) => setQuedaEnCaja(e.target.value)}
+                />
+              </div>
+            </label>
+
+            {completo && (
+              <div className="desglose-cuenta desglose-cuenta--abierta">
+                <ul>
+                  <li>
+                    <span>Se retira + queda en caja</span>
+                    <span>{formatMonto(contado)}</span>
+                  </li>
+                  <li>
+                    <span>Tiene que haber</span>
+                    <span>{formatMonto(esperado)}</span>
+                  </li>
+                </ul>
+                <p
+                  className={
+                    Math.abs(contado - esperado) < 0.01 ? 'caja-coincide' : 'caja-no-coincide'
+                  }
+                >
+                  {textoDiferencia(contado - esperado)}
+                </p>
+              </div>
+            )}
+
             {error && <p className="mensaje-error">{error}</p>}
             <div className="item-acciones">
               <button type="button" onClick={handleCerrar} disabled={working}>
                 {working ? 'Cerrando...' : 'Confirmar cierre'}
               </button>
-              <button type="button" onClick={() => setPidiendoCajaFinal(false)}>
+              <button type="button" onClick={() => setPidiendoArqueo(false)}>
                 Cancelar
               </button>
             </div>
@@ -103,16 +167,14 @@ export function CierreDelDia({
   }
 
   const totalesPorMedio = (cierre.totales_por_medio ?? {}) as Record<string, number>
-  const medios = Object.keys(totalesPorMedio).sort()
-  const efectivoVentas = totalesPorMedio['Efectivo'] ?? 0
-  const esperadoEnCajaFinal = (cierre.caja_inicial ?? 0) + efectivoVentas
-  const coincide = Math.abs(esperadoEnCajaFinal - (cierre.caja_final ?? 0)) < 0.01
+  const medios = ordenarMedios(Object.keys(totalesPorMedio))
+  const diferencia = cierre.diferencia_caja ?? 0
 
   return (
     <div className="cierre-dia cierre-dia--cerrado">
       <div className="sello-cerrado">Cerrado</div>
-      <span className="ganancia-hero-label">Ganancia neta</span>
-      <span className="ganancia-hero">{formatMonto(cierre.ganancia_neta)}</span>
+      <span className="ganancia-hero-label">Total ventas</span>
+      <span className="ganancia-hero">{formatMonto(cierre.total_ventas)}</span>
 
       {cierre.reabierto_en && (
         <p className="editado-badge">
@@ -134,31 +196,36 @@ export function CierreDelDia({
             <dd>{formatMonto(totalesPorMedio[m])}</dd>
           </Fragment>
         ))}
-
-        <dt>Total ventas</dt>
-        <dd>{formatMonto(cierre.total_ventas)}</dd>
-
-        <dt>Total gastos</dt>
-        <dd>{formatMonto(cierre.total_gastos)}</dd>
       </dl>
 
       <dl className="arqueo-caja">
         <dt>Caja inicial</dt>
-        <dd>{formatMonto(cierre.caja_inicial ?? 0)}</dd>
+        <dd>+ {formatMonto(cajaInicial)}</dd>
 
-        <dt>Efectivo esperado</dt>
-        <dd>{formatMonto(esperadoEnCajaFinal)}</dd>
+        <dt>Ventas en efectivo</dt>
+        <dd>+ {formatMonto(totalesPorMedio[MEDIO_EFECTIVO] ?? 0)}</dd>
 
-        <dt>Caja final (contada)</dt>
+        <dt>Gastos</dt>
+        <dd>− {formatMonto(cierre.total_gastos)}</dd>
+
+        <dt>Tenía que haber</dt>
+        <dd>{formatMonto(cierre.efectivo_esperado ?? 0)}</dd>
+
+        <dt>Se retiró</dt>
+        <dd>{formatMonto(cierre.retiro ?? 0)}</dd>
+
+        <dt>Quedó en caja</dt>
         <dd>{formatMonto(cierre.caja_final ?? 0)}</dd>
-
-        <dt>Ganancia en efectivo</dt>
-        <dd>{formatMonto(cierre.diferencia_caja ?? 0)}</dd>
       </dl>
 
-      <p className={coincide ? 'caja-coincide' : 'caja-no-coincide'}>
-        {coincide ? '✓ La caja coincide con lo esperado' : '⚠ La caja no coincide con lo esperado'}
+      <p className={Math.abs(diferencia) < 0.01 ? 'caja-coincide' : 'caja-no-coincide'}>
+        {textoDiferencia(diferencia)}
       </p>
+
+      <details className="desglose-detalle">
+        <summary>Ver desglose de cada cuenta</summary>
+        <DesgloseCuentas ventas={ventas} gastos={gastos} cajaInicial={cajaInicial} />
+      </details>
 
       {error && <p className="mensaje-error">{error}</p>}
       <button type="button" onClick={() => setConfirmandoReabrir(true)} disabled={working}>

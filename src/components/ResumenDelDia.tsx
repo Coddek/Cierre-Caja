@@ -21,7 +21,8 @@ export function ResumenDelDia({
   const totalesPorMedio = calcularTotalesPorMedio(ventas)
   const medios = Object.keys(totalesPorMedio).sort()
   const totalVentas = ventas.reduce((a, v) => a + v.monto + (v.monto_2 ?? 0), 0)
-  // Los gastos quedan solo como registro/referencia — no se restan de nada.
+  // Los gastos no se restan de las ventas; solo salen del efectivo de la
+  // caja (eso se ve en el cierre).
   const totalGastos = gastos.reduce((a, g) => a + g.monto, 0)
   const gananciaNeta = totalVentas
 

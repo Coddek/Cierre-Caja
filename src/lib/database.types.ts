@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       cierres: {
@@ -46,12 +21,14 @@ export type Database = {
           cerrado: boolean
           created_at: string
           diferencia_caja: number | null
+          efectivo_esperado: number | null
           fecha: string
           ganancia_neta: number
           id: string
           notas: string | null
           reabierto_en: string | null
           reabierto_por: string | null
+          retiro: number | null
           total_gastos: number
           total_ventas: number
           totales_por_medio: Json
@@ -63,12 +40,14 @@ export type Database = {
           cerrado?: boolean
           created_at?: string
           diferencia_caja?: number | null
+          efectivo_esperado?: number | null
           fecha: string
           ganancia_neta?: number
           id?: string
           notas?: string | null
           reabierto_en?: string | null
           reabierto_por?: string | null
+          retiro?: number | null
           total_gastos?: number
           total_ventas?: number
           totales_por_medio?: Json
@@ -80,12 +59,14 @@ export type Database = {
           cerrado?: boolean
           created_at?: string
           diferencia_caja?: number | null
+          efectivo_esperado?: number | null
           fecha?: string
           ganancia_neta?: number
           id?: string
           notas?: string | null
           reabierto_en?: string | null
           reabierto_por?: string | null
+          retiro?: number | null
           total_gastos?: number
           total_ventas?: number
           totales_por_medio?: Json
@@ -317,12 +298,14 @@ export type Database = {
           cerrado: boolean
           created_at: string
           diferencia_caja: number | null
+          efectivo_esperado: number | null
           fecha: string
           ganancia_neta: number
           id: string
           notas: string | null
           reabierto_en: string | null
           reabierto_por: string | null
+          retiro: number | null
           total_gastos: number
           total_ventas: number
           totales_por_medio: Json
@@ -336,19 +319,21 @@ export type Database = {
         }
       }
       cerrar_dia: {
-        Args: { p_caja_final: number; p_fecha: string }
+        Args: { p_caja_final: number; p_fecha: string; p_retiro: number }
         Returns: {
           caja_final: number | null
           caja_inicial: number | null
           cerrado: boolean
           created_at: string
           diferencia_caja: number | null
+          efectivo_esperado: number | null
           fecha: string
           ganancia_neta: number
           id: string
           notas: string | null
           reabierto_en: string | null
           reabierto_por: string | null
+          retiro: number | null
           total_gastos: number
           total_ventas: number
           totales_por_medio: Json
@@ -370,12 +355,14 @@ export type Database = {
           cerrado: boolean
           created_at: string
           diferencia_caja: number | null
+          efectivo_esperado: number | null
           fecha: string
           ganancia_neta: number
           id: string
           notas: string | null
           reabierto_en: string | null
           reabierto_por: string | null
+          retiro: number | null
           total_gastos: number
           total_ventas: number
           totales_por_medio: Json
@@ -516,9 +503,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },

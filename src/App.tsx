@@ -84,7 +84,7 @@ function App() {
         ) : loadingCierre ? (
           <SkeletonResumen />
         ) : diaCerrado ? (
-          <CierreDelDia fecha={fechaHoy} cierre={cierre} ventas={ventas} />
+          <CierreDelDia fecha={fechaHoy} cierre={cierre} ventas={ventas} gastos={gastos} />
         ) : diaSinAbrir ? (
           <AbrirDia fecha={fechaHoy} />
         ) : (
@@ -112,7 +112,7 @@ function App() {
 
             <hr />
 
-            <CierreDelDia fecha={fechaHoy} cierre={cierre} ventas={ventas} />
+            <CierreDelDia fecha={fechaHoy} cierre={cierre} ventas={ventas} gastos={gastos} />
           </>
         )}
       </main>

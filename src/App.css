@@ -1065,3 +1065,109 @@ hr {
 .caja-no-coincide {
   color: var(--rust);
 }
+
+/* Desglose de cada cuenta en el cierre */
+.desglose {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+
+.desglose-vacio {
+  font-size: 13px;
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+.desglose-cuenta {
+  background: var(--card);
+  border: 1px solid var(--mint-light);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.desglose-cuenta summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  list-style: none;
+}
+
+.desglose-cuenta summary::-webkit-details-marker {
+  display: none;
+}
+
+.desglose-cuenta summary > span::before {
+  content: '▸ ';
+  color: var(--ink-faint);
+}
+
+.desglose-cuenta[open] summary > span::before {
+  content: '▾ ';
+}
+
+.desglose-cantidad {
+  color: var(--ink-faint);
+  font-weight: 500;
+}
+
+.desglose-cuenta h3 {
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+
+.desglose-cuenta ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.desglose-cuenta--abierta ul {
+  margin-top: 0;
+}
+
+.desglose-cuenta li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  padding: 3px 0;
+  border-bottom: 1px dashed var(--mint-light);
+  font-variant-numeric: tabular-nums;
+}
+
+.desglose-cuenta li > span:last-child {
+  white-space: nowrap;
+}
+
+.desglose-nota {
+  color: var(--ink-faint);
+  font-size: 12px;
+}
+
+.desglose-resultado {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.desglose-detalle {
+  margin: 12px 0 16px;
+  text-align: left;
+}
+
+.desglose-detalle > summary {
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  margin-bottom: 8px;
+}

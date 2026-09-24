@@ -128,13 +128,26 @@ export function Historial() {
                       <span className="stat-valor">{formatMonto(c.caja_inicial)}</span>
                     </div>
                   )}
+                  {c.retiro != null && (
+                    <div className="stat">
+                      <span className="stat-label">Se retiró</span>
+                      <span className="stat-valor">{formatMonto(c.retiro)}</span>
+                    </div>
+                  )}
                   {c.caja_final != null && (
                     <div className="stat">
-                      <span className="stat-label">Caja final</span>
+                      <span className="stat-label">Quedó en caja</span>
                       <span className="stat-valor">{formatMonto(c.caja_final)}</span>
                     </div>
                   )}
                 </div>
+                {c.retiro != null && Math.abs(c.diferencia_caja ?? 0) >= 0.01 && (
+                  <p className="caja-no-coincide">
+                    {(c.diferencia_caja ?? 0) < 0
+                      ? `⚠ Faltaron ${formatMonto(-(c.diferencia_caja ?? 0))} en la caja`
+                      : `⚠ Sobraron ${formatMonto(c.diferencia_caja ?? 0)} en la caja`}
+                  </p>
+                )}
               </li>
             ))}
           </ul>
