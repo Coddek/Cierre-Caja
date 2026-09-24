@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { formatMonto } from '../lib/format'
 import { mensajeError } from '../lib/errors'
 import { MEDIO_EFECTIVO, calcularEfectivoEsperado, ordenarMedios } from '../lib/totalesPorMedio'
+import { resumenCierreTexto } from '../lib/resumenTexto'
 import { ConfirmDialog } from './ConfirmDialog'
 import { DesgloseCuentas } from './DesgloseCuentas'
 import type { CierreConEditor } from '../lib/types'
@@ -36,6 +37,7 @@ export function CierreDelDia({
   const [retiro, setRetiro] = useState('')
   const [quedaEnCaja, setQuedaEnCaja] = useState('')
   const [confirmandoReabrir, setConfirmandoReabrir] = useState(false)
+  const [avisoCompartir, setAvisoCompartir] = useState<string | null>(null)
 
   async function handleCerrar() {
     const montoRetiro = Number(retiro)
@@ -59,6 +61,26 @@ export function CierreDelDia({
     setPidiendoArqueo(false)
     setRetiro('')
     setQuedaEnCaja('')
+  }
+
+  // En el celu abre el menú de compartir (WhatsApp, etc.). Donde no existe
+  // (algunas compus), copia el texto para pegarlo a mano.
+  async function handleCompartir(texto: string) {
+    setAvisoCompartir(null)
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: texto })
+      } catch {
+        // Cerró el menú sin elegir nada: no es un error.
+      }
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(texto)
+      setAvisoCompartir('Resumen copiado. Pegalo en WhatsApp o donde quieras.')
+    } catch {
+      setAvisoCompartir('No se pudo copiar el resumen en este dispositivo.')
+    }
   }
 
   async function handleReabrir() {
@@ -226,6 +248,15 @@ export function CierreDelDia({
         <summary>Ver desglose de cada cuenta</summary>
         <DesgloseCuentas ventas={ventas} gastos={gastos} cajaInicial={cajaInicial} />
       </details>
+
+      <button
+        type="button"
+        className="btn-compartir"
+        onClick={() => handleCompartir(resumenCierreTexto(cierre, gastos))}
+      >
+        Compartir resumen
+      </button>
+      {avisoCompartir && <p className="aviso-compartir">{avisoCompartir}</p>}
 
       {error && <p className="mensaje-error">{error}</p>}
       <button type="button" onClick={() => setConfirmandoReabrir(true)} disabled={working}>

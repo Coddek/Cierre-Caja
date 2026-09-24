@@ -834,6 +834,19 @@ hr {
   border: 1px solid var(--mint);
 }
 
+.cierre-dia--cerrado button.btn-compartir {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.aviso-compartir {
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+}
+
 /* ---------- historial ---------- */
 
 .historial section {
