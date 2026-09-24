@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { getFontEmbedCSS, toBlob } from 'html-to-image'
+import { toBlob } from 'html-to-image'
 import type { Database } from '../lib/database.types'
 import type { CierreConEditor } from '../lib/types'
 import { resumenCierreTexto } from '../lib/resumenTexto'
@@ -7,21 +7,9 @@ import { ResumenImagen } from './ResumenImagen'
 
 type Gasto = Database['public']['Tables']['gastos']['Row']
 
-// Google Fonts parte cada fuente en varios archivos por alfabeto (latín,
-// latín extendido, vietnamita...). html-to-image mete TODOS dentro de la
-// imagen (~860 KB), lo que en el celu puede colgar la página. El texto del
-// resumen (español, $, −) entra entero en el subset "latin", así que solo
-// se incluye ese.
-function soloFuentesLatinas(css: string) {
-  return (css.match(/@font-face\s*{[^}]*}/g) ?? [])
-    .filter((regla) => !regla.includes('unicode-range') || regla.includes('U+0000-00FF'))
-    .join('\n')
-}
-
 async function generarImagen(nodo: HTMLElement, nombre: string): Promise<File> {
   await document.fonts.ready
-  const fontEmbedCSS = soloFuentesLatinas(await getFontEmbedCSS(nodo))
-  const opciones = { pixelRatio: 2, fontEmbedCSS }
+  const opciones = { pixelRatio: 3, cacheBust: true }
   // Safari a veces no incluye fuentes/imágenes en la primera pasada; la
   // segunda sale bien. Es el workaround conocido de html-to-image.
   await toBlob(nodo, opciones)
