@@ -156,7 +156,7 @@ export function CierreDelDia({
               <button type="button" onClick={handleCerrar} disabled={working}>
                 {working ? 'Cerrando...' : 'Confirmar cierre'}
               </button>
-              <button type="button" onClick={() => setPidiendoArqueo(false)}>
+              <button type="button" className="btn-secundario" onClick={() => setPidiendoArqueo(false)}>
                 Cancelar
               </button>
             </div>

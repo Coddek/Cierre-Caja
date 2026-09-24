@@ -37,32 +37,28 @@ export function CajaInicialEditable({ fecha, cajaInicial }: { fecha: string; caj
 
   if (!editando) {
     return (
-      <p className="caja-inicial-badge">
-        Caja inicial: {formatMonto(cajaInicial)}{' '}
-        <button type="button" className="caja-inicial-editar" onClick={empezar}>
+      <div className="caja-inicial-fila">
+        <span className="caja-inicial-badge">Caja inicial: {formatMonto(cajaInicial)}</span>
+        <button type="button" className="link-accion" onClick={empezar}>
           Editar
         </button>
-      </p>
+      </div>
     )
   }
 
+  // Mismo formato que la edición de una venta (VentaItem).
   return (
-    <form onSubmit={handleSubmit} className="caja-inicial-form">
-      <label className="campo-monto">
-        <span>Caja inicial</span>
-        <div className="input-monto-wrap">
-          <span className="input-monto-simbolo">$</span>
-          <input
-            type="number"
-            inputMode="decimal"
-            step="0.01"
-            min="0"
-            value={valor}
-            onChange={(e) => setValor(e.target.value)}
-            autoFocus
-          />
-        </div>
-      </label>
+    <form onSubmit={handleSubmit} className="item-editando caja-inicial-editando">
+      <span className="caja-inicial-editando-titulo">Corregir caja inicial</span>
+      <input
+        type="number"
+        inputMode="decimal"
+        step="0.01"
+        min="0"
+        value={valor}
+        onChange={(e) => setValor(e.target.value)}
+        autoFocus
+      />
       {error && <p className="mensaje-error">{error}</p>}
       <div className="item-acciones">
         <button type="submit" disabled={saving}>
