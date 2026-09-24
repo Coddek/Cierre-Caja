@@ -1216,3 +1216,191 @@ hr {
   border: 1px solid var(--mint);
   color: var(--ink-soft);
 }
+
+/* ---------- imagen del resumen para compartir ---------- */
+
+/* Fuera de la pantalla: existe solo para que html-to-image le saque la foto. */
+.ri-fuera-de-pantalla {
+  position: fixed;
+  top: 0;
+  left: -10000px;
+  pointer-events: none;
+}
+
+.ri {
+  position: relative;
+  overflow: hidden;
+  width: 380px;
+  padding: 26px 22px 30px;
+  background-color: var(--paper);
+  background-image: radial-gradient(rgba(18, 50, 35, 0.16) 1.1px, transparent 1.1px);
+  background-size: 14px 14px;
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+/* Marcas de agua (el isotipo): una grande sobre el fondo y otra en la tarjeta */
+.ri-marca-agua {
+  position: absolute;
+  pointer-events: none;
+}
+
+.ri-marca-agua--fondo {
+  top: -14px;
+  right: -52px;
+  width: 210px;
+  opacity: 0.09;
+  transform: rotate(-12deg);
+}
+
+.ri-marca-agua--tarjeta {
+  bottom: -26px;
+  right: -34px;
+  width: 190px;
+  opacity: 0.07;
+}
+
+.ri-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.ri-isotipo {
+  width: 46px;
+  height: auto;
+}
+
+.ri-marca {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+
+.ri-marca-nombre {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  font-style: italic;
+}
+
+.ri-marca-sub {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.ri-tarjeta {
+  position: relative;
+  overflow: hidden;
+  padding: 22px 22px 20px;
+  border-radius: 16px;
+  background: var(--card);
+  box-shadow: var(--sombra-tarjeta);
+  text-align: center;
+}
+
+.ri-fecha {
+  margin: 0 0 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.ri-hero-label {
+  display: block;
+  font-size: 13px;
+  color: var(--ink-faint);
+}
+
+.ri-hero {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+.ri-lista {
+  position: relative;
+  margin: 0;
+  text-align: left;
+}
+
+.ri-lista > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 0;
+  border-bottom: 1px dashed var(--mint-light);
+  font-size: 14px;
+}
+
+.ri-lista dt {
+  color: var(--ink-soft);
+}
+
+.ri-lista dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ri-lista > div.ri-subtotal {
+  border-top: 1px solid var(--mint);
+  border-bottom: 1px solid var(--mint);
+  margin: 4px 0;
+}
+
+.ri-subtotal dt,
+.ri-subtotal dd {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.ri-seccion {
+  margin: 18px 0 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--mint);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.ri-resultado {
+  position: relative;
+  margin: 16px 0 0;
+  padding: 9px 12px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.ri-resultado--ok {
+  background: var(--mint-light);
+  color: #1a7f37;
+}
+
+.ri-resultado--mal {
+  background: #f6e3de;
+  color: var(--rust);
+}
+
+.ri-editado {
+  position: relative;
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--rust);
+}
+
+/* El contenido va por encima de las marcas de agua */
+.ri-tarjeta > :not(.ri-marca-agua) {
+  position: relative;
+}
