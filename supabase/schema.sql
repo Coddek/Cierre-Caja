@@ -11,13 +11,37 @@ ALTER DATABASE postgres SET timezone TO 'America/Argentina/Buenos_Aires';
 
 -- ---------- TABLAS ----------
 
+-- Configuración editable desde el Table Editor, sin tocar código.
+-- "Efectivo" es especial: es el medio que se cuenta en la caja física
+-- (cerrar_dia y el frontend lo buscan por ese nombre).
+CREATE TABLE medios_pago (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL UNIQUE,
+  orden INTEGER NOT NULL DEFAULT 0,
+  activo BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Sugerencias para la descripción de la venta (texto libre, no lista cerrada).
+CREATE TABLE marcas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL UNIQUE,
+  orden INTEGER NOT NULL DEFAULT 0,
+  activo BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE ventas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   fecha DATE NOT NULL DEFAULT CURRENT_DATE,
   monto NUMERIC(12,2) NOT NULL CHECK (monto > 0),
-  medio_pago TEXT NOT NULL CHECK (medio_pago IN ('efectivo', 'transferencia', 'tarjeta')),
+  medio_pago TEXT NOT NULL REFERENCES medios_pago(nombre),
   descripcion TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Pago dividido: la venta se cobró con un segundo medio (ej. parte QR, parte efectivo).
+  medio_pago_2 TEXT REFERENCES medios_pago(nombre),
+  monto_2 NUMERIC(12,2) CHECK (monto_2 IS NULL OR monto_2 > 0),
+  CONSTRAINT ventas_pago2_consistente CHECK ((medio_pago_2 IS NULL) = (monto_2 IS NULL))
 );
 
 CREATE TABLE gastos (
@@ -39,16 +63,25 @@ CREATE TABLE usuarios_caja (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- Un registro por día para todo el negocio (no por usuario).
+-- Un registro por día para todo el negocio (no por usuario). Se crea al
+-- abrir el día (abrir_dia) y se completa al cerrarlo (cerrar_dia).
+--
+-- Arqueo de efectivo, igual que en el cuaderno del local:
+--   efectivo_esperado = caja_inicial + ventas en efectivo - gastos
+--   efectivo_esperado = retiro + caja_final
+-- caja_final es lo que queda en la caja: la caja inicial del día siguiente.
 CREATE TABLE cierres (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   fecha DATE NOT NULL UNIQUE,
-  total_efectivo NUMERIC(12,2) NOT NULL DEFAULT 0,
-  total_transferencia NUMERIC(12,2) NOT NULL DEFAULT 0,
-  total_tarjeta NUMERIC(12,2) NOT NULL DEFAULT 0,
+  totales_por_medio JSONB NOT NULL DEFAULT '{}'::jsonb,  -- { "Efectivo": 242200, "Qr": ... }
   total_ventas NUMERIC(12,2) NOT NULL DEFAULT 0,
   total_gastos NUMERIC(12,2) NOT NULL DEFAULT 0,
-  ganancia_neta NUMERIC(12,2) NOT NULL DEFAULT 0,
+  ganancia_neta NUMERIC(12,2) NOT NULL DEFAULT 0,        -- = total_ventas (los gastos no se restan de las ventas)
+  caja_inicial NUMERIC(12,2),
+  efectivo_esperado NUMERIC(12,2),
+  retiro NUMERIC(12,2),
+  caja_final NUMERIC(12,2),
+  diferencia_caja NUMERIC(12,2),                          -- (retiro + caja_final) - efectivo_esperado; <0 falta, >0 sobra
   cerrado BOOLEAN NOT NULL DEFAULT true,
   notas TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -88,60 +121,85 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
-CREATE TRIGGER trg_ventas_bloqueo_cierre
-  BEFORE INSERT OR UPDATE OR DELETE ON ventas
-  FOR EACH ROW EXECUTE FUNCTION bloquear_dia_cerrado();
+-- OJO: al 24/09/2026 estos dos triggers NO están aplicados en la base (la
+-- función existe pero no está conectada). Hoy el bloqueo post-cierre lo hace
+-- solo el frontend. Para reactivarlo, correr:
+--
+-- CREATE TRIGGER trg_ventas_bloqueo_cierre
+--   BEFORE INSERT OR UPDATE OR DELETE ON ventas
+--   FOR EACH ROW EXECUTE FUNCTION bloquear_dia_cerrado();
+--
+-- CREATE TRIGGER trg_gastos_bloqueo_cierre
+--   BEFORE INSERT OR UPDATE OR DELETE ON gastos
+--   FOR EACH ROW EXECUTE FUNCTION bloquear_dia_cerrado();
 
-CREATE TRIGGER trg_gastos_bloqueo_cierre
-  BEFORE INSERT OR UPDATE OR DELETE ON gastos
-  FOR EACH ROW EXECUTE FUNCTION bloquear_dia_cerrado();
+-- Abre el día con la caja inicial (efectivo para dar vuelto). Si el día ya
+-- estaba abierto, pisa la caja inicial: sirve también para corregirla.
+CREATE OR REPLACE FUNCTION abrir_dia(p_fecha DATE, p_caja_inicial NUMERIC)
+RETURNS cierres
+LANGUAGE sql
+SET search_path = public
+AS $$
+  INSERT INTO cierres (fecha, caja_inicial, cerrado)
+  VALUES (p_fecha, p_caja_inicial, false)
+  ON CONFLICT (fecha) DO UPDATE SET caja_inicial = EXCLUDED.caja_inicial
+  RETURNING *;
+$$;
 
--- Calcula los totales del día desde ventas/gastos y (re)genera el cierre,
--- dejándolo cerrado. SECURITY INVOKER: corre con los permisos del usuario
--- que la llama, no necesita privilegios elevados.
-CREATE OR REPLACE FUNCTION cerrar_dia(p_fecha DATE)
+-- Calcula los totales por medio de pago (sumando las dos partes de los pagos
+-- divididos) y el efectivo esperado, guarda el arqueo y deja el día cerrado.
+-- SECURITY INVOKER: corre con los permisos (RLS) del usuario que la llama.
+CREATE OR REPLACE FUNCTION cerrar_dia(p_fecha DATE, p_retiro NUMERIC, p_caja_final NUMERIC)
 RETURNS cierres
 LANGUAGE plpgsql
-SECURITY INVOKER
 SET search_path = public
 AS $$
 DECLARE
-  v_total_efectivo NUMERIC(12,2);
-  v_total_transferencia NUMERIC(12,2);
-  v_total_tarjeta NUMERIC(12,2);
+  v_totales_por_medio JSONB;
   v_total_ventas NUMERIC(12,2);
   v_total_gastos NUMERIC(12,2);
+  v_caja_inicial NUMERIC(12,2);
+  v_esperado NUMERIC(12,2);
   v_cierre cierres;
 BEGIN
-  SELECT
-    COALESCE(SUM(monto) FILTER (WHERE medio_pago = 'efectivo'), 0),
-    COALESCE(SUM(monto) FILTER (WHERE medio_pago = 'transferencia'), 0),
-    COALESCE(SUM(monto) FILTER (WHERE medio_pago = 'tarjeta'), 0),
-    COALESCE(SUM(monto), 0)
-  INTO v_total_efectivo, v_total_transferencia, v_total_tarjeta, v_total_ventas
-  FROM ventas
-  WHERE fecha = p_fecha;
+  SELECT COALESCE(jsonb_object_agg(medio_pago, total), '{}'::jsonb), COALESCE(SUM(total), 0)
+  INTO v_totales_por_medio, v_total_ventas
+  FROM (
+    SELECT medio_pago, SUM(monto) AS total
+    FROM (
+      SELECT medio_pago, monto FROM ventas WHERE fecha = p_fecha
+      UNION ALL
+      SELECT medio_pago_2, monto_2 FROM ventas WHERE fecha = p_fecha AND medio_pago_2 IS NOT NULL
+    ) todos_los_pagos
+    GROUP BY medio_pago
+  ) sub;
 
-  SELECT COALESCE(SUM(monto), 0)
-  INTO v_total_gastos
-  FROM gastos
-  WHERE fecha = p_fecha;
+  -- Los gastos no tocan los totales de ventas, pero sí salen de la caja:
+  -- se restan del efectivo esperado.
+  SELECT COALESCE(SUM(monto), 0) INTO v_total_gastos FROM gastos WHERE fecha = p_fecha;
+
+  SELECT caja_inicial INTO v_caja_inicial FROM cierres WHERE fecha = p_fecha;
+  v_esperado := COALESCE(v_caja_inicial, 0)
+    + COALESCE((v_totales_por_medio->>'Efectivo')::NUMERIC, 0)
+    - v_total_gastos;
 
   INSERT INTO cierres (
-    fecha, total_efectivo, total_transferencia, total_tarjeta,
-    total_ventas, total_gastos, ganancia_neta, cerrado, updated_at
+    fecha, totales_por_medio, total_ventas, total_gastos, ganancia_neta,
+    efectivo_esperado, retiro, caja_final, diferencia_caja, cerrado, updated_at
   )
   VALUES (
-    p_fecha, v_total_efectivo, v_total_transferencia, v_total_tarjeta,
-    v_total_ventas, v_total_gastos, v_total_ventas - v_total_gastos, true, now()
+    p_fecha, v_totales_por_medio, v_total_ventas, v_total_gastos, v_total_ventas,
+    v_esperado, p_retiro, p_caja_final, (p_retiro + p_caja_final) - v_esperado, true, now()
   )
   ON CONFLICT (fecha) DO UPDATE SET
-    total_efectivo = EXCLUDED.total_efectivo,
-    total_transferencia = EXCLUDED.total_transferencia,
-    total_tarjeta = EXCLUDED.total_tarjeta,
+    totales_por_medio = EXCLUDED.totales_por_medio,
     total_ventas = EXCLUDED.total_ventas,
     total_gastos = EXCLUDED.total_gastos,
     ganancia_neta = EXCLUDED.ganancia_neta,
+    efectivo_esperado = EXCLUDED.efectivo_esperado,
+    retiro = EXCLUDED.retiro,
+    caja_final = EXCLUDED.caja_final,
+    diferencia_caja = EXCLUDED.diferencia_caja,
     cerrado = true,
     updated_at = now()
   RETURNING * INTO v_cierre;
@@ -167,9 +225,11 @@ AS $$
   RETURNING *;
 $$;
 
-REVOKE EXECUTE ON FUNCTION cerrar_dia(DATE) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION abrir_dia(DATE, NUMERIC) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION cerrar_dia(DATE, NUMERIC, NUMERIC) FROM PUBLIC;
 REVOKE EXECUTE ON FUNCTION reabrir_dia(DATE) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION cerrar_dia(DATE) TO authenticated;
+GRANT EXECUTE ON FUNCTION abrir_dia(DATE, NUMERIC) TO authenticated;
+GRANT EXECUTE ON FUNCTION cerrar_dia(DATE, NUMERIC, NUMERIC) TO authenticated;
 GRANT EXECUTE ON FUNCTION reabrir_dia(DATE) TO authenticated;
 
 -- ---------- RLS ----------
@@ -178,8 +238,19 @@ ALTER TABLE ventas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE gastos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE cierres ENABLE ROW LEVEL SECURITY;
 ALTER TABLE usuarios_caja ENABLE ROW LEVEL SECURITY;
+ALTER TABLE medios_pago ENABLE ROW LEVEL SECURITY;
+ALTER TABLE marcas ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "usuarios_caja_members_select" ON usuarios_caja
+  FOR SELECT TO authenticated
+  USING (is_usuario_caja(auth.uid()));
+
+-- Configuración: solo lectura desde la app (se edita desde el dashboard).
+CREATE POLICY "medios_pago_select" ON medios_pago
+  FOR SELECT TO authenticated
+  USING (is_usuario_caja(auth.uid()));
+
+CREATE POLICY "marcas_select" ON marcas
   FOR SELECT TO authenticated
   USING (is_usuario_caja(auth.uid()));
 
