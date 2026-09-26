@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { formatMonto } from '../lib/format'
+import { formatHora, formatMonto } from '../lib/format'
 import { mensajeError } from '../lib/errors'
 import { ConfirmDialog } from './ConfirmDialog'
 import type { Database } from '../lib/database.types'
@@ -74,7 +74,10 @@ export function GastoItem({ gasto }: { gasto: Gasto }) {
     <li className="item-movimiento">
       <div className="item-principal">
         <span className="item-monto">{formatMonto(gasto.monto)}</span>
-        <span className="item-descripcion">{gasto.descripcion}</span>
+        <span className="item-descripcion">
+          {gasto.descripcion && `${gasto.descripcion} · `}
+          <span className="item-hora">{formatHora(gasto.created_at)}</span>
+        </span>
       </div>
       <div className="item-lateral">
         <div className="item-acciones">

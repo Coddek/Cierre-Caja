@@ -1479,3 +1479,9 @@ hr {
   color: var(--ink-faint);
   overflow-wrap: anywhere;
 }
+
+/* Hora de carga de cada venta/gasto, en la línea de la descripción */
+.item-hora {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

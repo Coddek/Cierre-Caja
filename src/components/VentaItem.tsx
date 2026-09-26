@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { formatMonto } from '../lib/format'
+import { formatHora, formatMonto } from '../lib/format'
 import { mensajeError } from '../lib/errors'
 import { ConfirmDialog } from './ConfirmDialog'
 import { useMediosPago } from '../hooks/useMediosPago'
@@ -136,7 +136,10 @@ export function VentaItem({ venta }: { venta: Venta }) {
     <li className="item-movimiento">
       <div className="item-principal">
         <span className="item-monto">{formatMonto(venta.monto)}</span>
-        {venta.descripcion && <span className="item-descripcion">{venta.descripcion}</span>}
+        <span className="item-descripcion">
+          {venta.descripcion && `${venta.descripcion} · `}
+          <span className="item-hora">{formatHora(venta.created_at)}</span>
+        </span>
       </div>
       <div className="item-lateral">
         <span className="tag">{venta.medio_pago}</span>
