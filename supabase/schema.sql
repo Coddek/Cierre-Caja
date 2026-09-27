@@ -266,31 +266,31 @@ ALTER TABLE marcas ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "usuarios_caja_members_select" ON usuarios_caja
   FOR SELECT TO authenticated
-  USING (is_usuario_caja(auth.uid()));
+  USING (is_usuario_caja((select auth.uid())));
 
 -- Configuración: solo lectura desde la app (se edita desde el dashboard).
 CREATE POLICY "medios_pago_select" ON medios_pago
   FOR SELECT TO authenticated
-  USING (is_usuario_caja(auth.uid()));
+  USING (is_usuario_caja((select auth.uid())));
 
 CREATE POLICY "marcas_select" ON marcas
   FOR SELECT TO authenticated
-  USING (is_usuario_caja(auth.uid()));
+  USING (is_usuario_caja((select auth.uid())));
 
 CREATE POLICY "ventas_usuarios_caja" ON ventas
   FOR ALL TO authenticated
-  USING (is_usuario_caja(auth.uid()))
-  WITH CHECK (is_usuario_caja(auth.uid()));
+  USING (is_usuario_caja((select auth.uid())))
+  WITH CHECK (is_usuario_caja((select auth.uid())));
 
 CREATE POLICY "gastos_usuarios_caja" ON gastos
   FOR ALL TO authenticated
-  USING (is_usuario_caja(auth.uid()))
-  WITH CHECK (is_usuario_caja(auth.uid()));
+  USING (is_usuario_caja((select auth.uid())))
+  WITH CHECK (is_usuario_caja((select auth.uid())));
 
 CREATE POLICY "cierres_usuarios_caja" ON cierres
   FOR ALL TO authenticated
-  USING (is_usuario_caja(auth.uid()))
-  WITH CHECK (is_usuario_caja(auth.uid()));
+  USING (is_usuario_caja((select auth.uid())))
+  WITH CHECK (is_usuario_caja((select auth.uid())));
 
 -- ---------- REALTIME ----------
 
@@ -303,3 +303,19 @@ ALTER TABLE cierres REPLICA IDENTITY FULL;
 ALTER PUBLICATION supabase_realtime ADD TABLE ventas;
 ALTER PUBLICATION supabase_realtime ADD TABLE gastos;
 ALTER PUBLICATION supabase_realtime ADD TABLE cierres;
+
+-- ---------- PERMISOS (endurecimiento 27/09/2026) ----------
+-- Aplicado junto con Asiento Contable (mismo proyecto de Supabase); el script
+-- completo está en el repo de Asiento Contable: supabase/seguridad.sql.
+-- Las políticas usan (select auth.uid()) para no recalcularlo en cada fila.
+
+-- Nadie sin sesión toca las tablas; los usuarios con sesión no tienen
+-- permisos que no usan (TRUNCATE saltea RLS).
+REVOKE ALL ON ventas, gastos, cierres, usuarios_caja, medios_pago, marcas FROM anon;
+REVOKE TRUNCATE, REFERENCES, TRIGGER ON ventas, gastos, cierres, usuarios_caja, medios_pago, marcas FROM authenticated;
+
+-- Funciones: solo usuarios con sesión; la función de trigger no se expone.
+REVOKE EXECUTE ON FUNCTION abrir_dia(DATE, NUMERIC) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION reabrir_dia(DATE) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION is_usuario_caja(UUID) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION bloquear_dia_cerrado() FROM PUBLIC, anon, authenticated;
