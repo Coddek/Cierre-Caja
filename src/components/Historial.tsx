@@ -31,7 +31,7 @@ function formatMes(mes: string) {
   return label.charAt(0).toUpperCase() + label.slice(1)
 }
 
-export function Historial() {
+export function Historial({ onVerDia }: { onVerDia: (fecha: string) => void }) {
   const { cierres, loading } = useCierres()
 
   if (loading) {
@@ -91,6 +91,9 @@ export function Historial() {
                   <span className="dia-fecha">{c.fecha}</span>
                   <span className="dia-ganancia">{formatMonto(c.total_ventas)}</span>
                 </div>
+                <button type="button" className="link-accion dia-ver-detalle" onClick={() => onVerDia(c.fecha)}>
+                  Ver detalle
+                </button>
                 {c.reabierto_en && (
                   <p className="editado-badge">
                     ✎ Editado el{' '}

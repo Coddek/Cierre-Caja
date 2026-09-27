@@ -375,6 +375,14 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      ventas_por_hora: {
+        Args: { p_desde: string }
+        Returns: {
+          cantidad: number
+          hora: number
+          total: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

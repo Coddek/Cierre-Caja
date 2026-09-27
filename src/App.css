@@ -1485,3 +1485,286 @@ hr {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------- pestaña Números ---------- */
+
+.numeros {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.numeros-seccion {
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: var(--sombra-tarjeta);
+}
+
+.numeros-seccion h2 {
+  font-size: 21px;
+  margin-bottom: 10px;
+}
+
+.numeros-nota,
+.numeros-vacio {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--ink-faint);
+  line-height: 1.4;
+}
+
+.numeros-vacio {
+  margin: 8px 0;
+}
+
+/* ver un día */
+
+.dia-detalle-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.dia-detalle-nav input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 10px;
+  font-size: 15px;
+  font-family: var(--font-ui);
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--mint);
+  border-radius: 8px;
+}
+
+.dia-detalle-nav button {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink);
+  background: none;
+  border: 1px solid var(--mint);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.dia-detalle-nav button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.dia-detalle-fecha {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.dia-detalle-total {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.dia-detalle-comparacion {
+  margin: 4px 0 14px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.variacion-sube {
+  color: #1a7f37;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.variacion-baja {
+  color: var(--rust);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.dia-detalle-arqueo {
+  margin: 12px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+
+.dia-ver-detalle {
+  margin: -2px 0 8px;
+}
+
+/* gráficos */
+
+.grafico-leyenda {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.grafico-leyenda span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.grafico-leyenda i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.grafico-lectura {
+  min-height: 20px;
+  margin: 0 0 6px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.grafico-lectura strong {
+  color: var(--ink);
+}
+
+.grafico-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.grafico-grilla {
+  stroke: #e6e9e4;
+  stroke-width: 1;
+}
+
+.grafico-base {
+  stroke: #c9d3cb;
+  stroke-width: 1;
+}
+
+.grafico-eje {
+  font-family: var(--font-ui);
+  font-size: 10px;
+  fill: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.grafico-elegida {
+  fill: var(--paper);
+}
+
+.grafico-tabla {
+  margin-top: 8px;
+}
+
+.grafico-tabla summary,
+.mezcla-leyenda th {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.grafico-tabla table,
+.mezcla-leyenda {
+  width: 100%;
+  margin-top: 6px;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.grafico-tabla th,
+.grafico-tabla td,
+.mezcla-leyenda th,
+.mezcla-leyenda td {
+  padding: 4px 0;
+  text-align: right;
+  border-bottom: 1px dashed var(--mint-light);
+}
+
+.grafico-tabla th:first-child,
+.grafico-tabla td:first-child,
+.mezcla-leyenda td:first-child {
+  text-align: left;
+}
+
+.grafico-tabla th {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.grafico-tabla td {
+  color: var(--ink-soft);
+}
+
+/* cómo pagan */
+
+.mezcla-fila {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 12px;
+}
+
+.mezcla-titulo {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+
+.mezcla-barra {
+  display: flex;
+  gap: 2px;
+  height: 16px;
+}
+
+.mezcla-segmento {
+  min-width: 3px;
+}
+
+.mezcla-segmento:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.mezcla-segmento:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.mezcla-segmento:only-child {
+  border-radius: 4px;
+}
+
+.mezcla-leyenda td {
+  color: var(--ink-soft);
+}
+
+.mezcla-muestra {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 3px;
+  vertical-align: -1px;
+}
+
+.grafico-tabla td + td,
+.grafico-tabla th + th,
+.mezcla-leyenda td + td,
+.mezcla-leyenda th + th {
+  padding-left: 12px;
+  white-space: nowrap;
+}

@@ -13,6 +13,7 @@ export type Pago = {
   ventaId: string
   descripcion: string | null
   monto: number
+  creadaEn: string
   // Si la venta se pagó con 2 medios: el total de la venta y el otro medio.
   dividido: { totalVenta: number; otroMedio: string } | null
 }
@@ -28,6 +29,7 @@ export function pagosPorMedio(ventas: Venta[]): Record<string, Pago[]> {
       ventaId: v.id,
       descripcion: v.descripcion,
       monto: v.monto,
+      creadaEn: v.created_at,
       dividido: esDividida ? { totalVenta, otroMedio: v.medio_pago_2! } : null,
     })
     if (esDividida) {
@@ -35,6 +37,7 @@ export function pagosPorMedio(ventas: Venta[]): Record<string, Pago[]> {
         ventaId: v.id,
         descripcion: v.descripcion,
         monto: v.monto_2!,
+        creadaEn: v.created_at,
         dividido: { totalVenta, otroMedio: v.medio_pago },
       })
     }

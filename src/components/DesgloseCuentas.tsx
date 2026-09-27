@@ -1,5 +1,5 @@
 import type { Database } from '../lib/database.types'
-import { formatMonto } from '../lib/format'
+import { formatHora, formatMonto } from '../lib/format'
 import { MEDIO_EFECTIVO, calcularEfectivoEsperado, ordenarMedios, pagosPorMedio } from '../lib/totalesPorMedio'
 
 type Venta = Database['public']['Tables']['ventas']['Row']
@@ -41,6 +41,7 @@ export function DesgloseCuentas({
               <li key={`${p.ventaId}-${m}`}>
                 <span>
                   {p.descripcion || <em>sin descripción</em>}
+                  <span className="desglose-nota"> · {formatHora(p.creadaEn)}</span>
                   {p.dividido && (
                     <span className="desglose-nota">
                       {' '}

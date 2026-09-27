@@ -232,6 +232,29 @@ GRANT EXECUTE ON FUNCTION abrir_dia(DATE, NUMERIC) TO authenticated;
 GRANT EXECUTE ON FUNCTION cerrar_dia(DATE, NUMERIC, NUMERIC) TO authenticated;
 GRANT EXECUTE ON FUNCTION reabrir_dia(DATE) TO authenticated;
 
+-- Estadísticas (pestaña "Números"): cantidad de ventas por hora del día
+-- (según la hora en que se cargaron), desde p_desde. Agrupa en la base para
+-- no traer miles de filas al celu.
+CREATE OR REPLACE FUNCTION ventas_por_hora(p_desde DATE)
+RETURNS TABLE (hora INTEGER, cantidad INTEGER, total NUMERIC)
+LANGUAGE sql
+STABLE
+SET search_path = public
+AS $$
+  SELECT
+    EXTRACT(HOUR FROM created_at AT TIME ZONE 'America/Argentina/Buenos_Aires')::INTEGER AS hora,
+    COUNT(*)::INTEGER AS cantidad,
+    SUM(monto + COALESCE(monto_2, 0)) AS total
+  FROM ventas
+  WHERE fecha >= p_desde
+  GROUP BY 1
+  ORDER BY 1;
+$$;
+
+REVOKE EXECUTE ON FUNCTION ventas_por_hora(DATE) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION ventas_por_hora(DATE) FROM anon;
+GRANT EXECUTE ON FUNCTION ventas_por_hora(DATE) TO authenticated;
+
 -- ---------- RLS ----------
 
 ALTER TABLE ventas ENABLE ROW LEVEL SECURITY;

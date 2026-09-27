@@ -12,6 +12,7 @@ import { CierreDelDia } from './components/CierreDelDia'
 import { AbrirDia } from './components/AbrirDia'
 import { Historial } from './components/Historial'
 import { DiaPendiente } from './components/DiaPendiente'
+import { Numeros } from './components/Numeros'
 import { Modal } from './components/Modal'
 import { SkeletonResumen } from './components/SkeletonLista'
 import { useVentasHoy } from './hooks/useVentasHoy'
@@ -28,7 +29,8 @@ const fechaHoy = getFechaHoy()
 function App() {
   const { session, nombre, loading } = useAuth()
   const [tipoAuthUrl, setTipoAuthUrl] = useState(detectarTipoAuthUrl)
-  const [vista, setVista] = useState<'hoy' | 'historial'>('hoy')
+  const [vista, setVista] = useState<'hoy' | 'historial' | 'numeros'>('hoy')
+  const [diaNumeros, setDiaNumeros] = useState(fechaHoy)
   const [modalAbierto, setModalAbierto] = useState<'venta' | 'gasto' | null>(null)
   const { ventas, loading: loadingVentas } = useVentasHoy(fechaHoy, !!session)
   const { gastos, loading: loadingGastos } = useGastosHoy(fechaHoy, !!session)
@@ -81,6 +83,13 @@ function App() {
         >
           Historial
         </button>
+        <button
+          type="button"
+          className={vista === 'numeros' ? 'active' : ''}
+          onClick={() => setVista('numeros')}
+        >
+          Números
+        </button>
       </nav>
 
       <main>
@@ -95,7 +104,14 @@ function App() {
         )}
 
         {vista === 'historial' ? (
-          <Historial />
+          <Historial
+            onVerDia={(fecha) => {
+              setDiaNumeros(fecha)
+              setVista('numeros')
+            }}
+          />
+        ) : vista === 'numeros' ? (
+          <Numeros hoy={fechaHoy} fecha={diaNumeros} onCambiarFecha={setDiaNumeros} />
         ) : loadingCierre || loadingPendiente ? (
           <SkeletonResumen />
         ) : pendiente ? (

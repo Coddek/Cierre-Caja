@@ -25,6 +25,7 @@ App de cierre de caja diario para un local comercial: reemplaza la hoja del cuad
 - **Continuidad de la caja:** si un día quedó sin cerrar, la app obliga a cerrarlo con su arqueo antes de abrir el siguiente
 - **Reapertura** del día para corregir, con registro de quién y cuándo lo editó
 - **Historial** de cierres agrupado por mes
+- **Números:** ver cualquier día con su detalle y compararlo con el mismo día de la semana del año anterior, ventas por mes contra el año anterior, promedio por día de la semana, cómo pagan los clientes y horarios con más ventas (gráficos SVG propios, sin librerías)
 - Instalable como PWA en el celular
 
 ## Stack
