@@ -25,8 +25,26 @@ App de cierre de caja diario para un local comercial: reemplaza la hoja del cuad
 - **Continuidad de la caja:** si un día quedó sin cerrar, la app obliga a cerrarlo con su arqueo antes de abrir el siguiente
 - **Reapertura** del día para corregir, con registro de quién y cuándo lo editó
 - **Historial** de cierres agrupado por mes
-- **Números:** ver cualquier día con su detalle y compararlo con el mismo día de la semana del año anterior, ventas por mes contra el año anterior, promedio por día de la semana, cómo pagan los clientes y horarios con más ventas (gráficos SVG propios, sin librerías)
+- **Números:** métricas del negocio para tomar decisiones (ver la sección de abajo)
 - Instalable como PWA en el celular
+
+## Métricas para decidir
+
+Además de reemplazar el cuaderno, la app convierte los cierres diarios en información para el negocio: qué días y horarios conviene reforzar, cuándo tiene sentido lanzar una promoción y si el negocio viene mejor o peor que el año anterior. Todo en una pestaña aparte ("Números"), para no sumar nada al uso de todos los días.
+
+- **Ver un día:** el detalle completo de cualquier fecha (cada venta con su hora y medio de pago, gastos, arqueo) y la comparación con **el mismo día de la semana del año anterior**, no con la misma fecha: en un local pesa más que sea sábado que el número del día.
+- **Ventas por mes:** los últimos 12 meses contra el mismo mes del año anterior. El mes en curso se compara contra el mismo tramo (ej. del 1 al 26), para no mostrar una caída que en realidad es un mes sin terminar.
+- **Qué días se vende más:** promedio por día de la semana, para decidir ofertas en los días flojos o reforzar los fuertes.
+- **Cómo pagan:** la mezcla de medios de pago del mes contra los últimos 12 meses (ej. si el efectivo viene bajando).
+- **Horarios con más ventas:** cantidad de ventas por hora del día.
+
+Los gráficos son SVG propios, sin librerías, con una paleta validada para daltonismo; tocando una barra se ve el valor exacto y cada gráfico tiene su vista en tabla. Los cálculos salen de los cierres guardados, y la agrupación por hora la hace una función de Postgres para no traer miles de filas al celular.
+
+<p align="center">
+  <img src="docs/numeros-dia.png" width="260" alt="Ver un día, comparado con el mismo sábado del año anterior">
+  <img src="docs/numeros-meses.png" width="260" alt="Ventas por mes contra el año anterior">
+</p>
+<p align="center"><sub>Con datos de ejemplo.</sub></p>
 
 ## Stack
 
