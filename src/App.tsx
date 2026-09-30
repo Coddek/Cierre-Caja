@@ -50,6 +50,15 @@ function App() {
     return <Login />
   }
 
+  // En el celular, al enfocar un campo del modal se abre el teclado y el
+  // navegador scrollea la página de atrás para hacerle lugar; al cerrar el
+  // modal queda ahí abajo. Volvemos arriba para tener a mano "Agregar venta".
+  function cerrarCargaYVolverArriba() {
+    setModalAbierto(null)
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    window.scrollTo({ top: 0 })
+  }
+
   const diaCerrado = cierre?.cerrado ?? false
   const diaSinAbrir = !diaCerrado && (cierre?.caja_inicial ?? null) == null
 
@@ -152,13 +161,13 @@ function App() {
 
       {modalAbierto === 'venta' && (
         <Modal titulo="Nueva venta" onClose={() => setModalAbierto(null)}>
-          <VentaForm fecha={fechaHoy} onSuccess={() => setModalAbierto(null)} />
+          <VentaForm fecha={fechaHoy} onSuccess={cerrarCargaYVolverArriba} />
         </Modal>
       )}
 
       {modalAbierto === 'gasto' && (
         <Modal titulo="Nuevo gasto" onClose={() => setModalAbierto(null)}>
-          <GastoForm fecha={fechaHoy} onSuccess={() => setModalAbierto(null)} />
+          <GastoForm fecha={fechaHoy} onSuccess={cerrarCargaYVolverArriba} />
         </Modal>
       )}
     </div>
