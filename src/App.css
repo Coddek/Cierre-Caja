@@ -1598,6 +1598,24 @@ hr {
   line-height: 1.5;
 }
 
+/* Mismo estilo que "Reabrir día" en el día cerrado (.cierre-dia--cerrado). */
+.dia-detalle-corregir {
+  width: 100%;
+  margin-top: 16px;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-soft);
+  border: 1px solid var(--mint);
+  cursor: pointer;
+}
+
+.dia-detalle-corregir:disabled {
+  opacity: 0.55;
+}
+
 .dia-ver-detalle {
   margin: -2px 0 8px;
 }

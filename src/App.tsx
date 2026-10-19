@@ -35,7 +35,7 @@ function App() {
   const { ventas, loading: loadingVentas } = useVentasHoy(fechaHoy, !!session)
   const { gastos, loading: loadingGastos } = useGastosHoy(fechaHoy, !!session)
   const { cierre, loading: loadingCierre } = useCierreHoy(fechaHoy, !!session)
-  const { pendiente, loading: loadingPendiente } = useDiaPendiente(fechaHoy, !!session)
+  const { pendiente, reabierto, loading: loadingPendiente } = useDiaPendiente(fechaHoy, !!session)
   const cambioDeDia = useCambioDeDia(fechaHoy)
 
   if (loading) {
@@ -108,6 +108,22 @@ function App() {
             <span>Si terminaste con el día anterior, pasá al día nuevo.</span>
             <button type="button" onClick={() => window.location.reload()}>
               Pasar al día nuevo
+            </button>
+          </div>
+        )}
+
+        {reabierto && !(vista === 'numeros' && diaNumeros === reabierto) && (
+          <div className="aviso-pendiente">
+            <strong>El día {reabierto.split('-').reverse().join('/')} quedó reabierto para corregir.</strong>
+            <span>Cuando termines de corregirlo, volvé a confirmar el cierre.</span>
+            <button
+              type="button"
+              onClick={() => {
+                setDiaNumeros(reabierto)
+                setVista('numeros')
+              }}
+            >
+              Ir a ese día
             </button>
           </div>
         )}

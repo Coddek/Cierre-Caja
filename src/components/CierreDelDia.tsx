@@ -37,8 +37,12 @@ export function CierreDelDia({
   const [working, setWorking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [pidiendoArqueo, setPidiendoArqueo] = useState(arqueoAbierto)
-  const [retiro, setRetiro] = useState('')
-  const [quedaEnCaja, setQuedaEnCaja] = useState('')
+  // Un día reabierto conserva el arqueo de la primera vez: se precarga para
+  // no tener que acordarse de lo que se contó (si solo faltaba cargar una
+  // venta, la plata contada es la misma).
+  const yaSeHabiaCerrado = cierre?.retiro != null
+  const [retiro, setRetiro] = useState(yaSeHabiaCerrado ? String(cierre.retiro) : '')
+  const [quedaEnCaja, setQuedaEnCaja] = useState(yaSeHabiaCerrado ? String(cierre.caja_final ?? 0) : '')
   const [confirmandoReabrir, setConfirmandoReabrir] = useState(false)
 
   async function handleCerrar() {
@@ -100,6 +104,7 @@ export function CierreDelDia({
             <p className="caja-esperada-nota">
               Contá la plata de la caja y separá lo que se retira de lo que queda para dar vuelto
               mañana.
+              {yaSeHabiaCerrado && ' Ya viene cargado lo que se anotó la vez anterior.'}
             </p>
             <label className="campo-monto">
               <span>Plata que se retira</span>

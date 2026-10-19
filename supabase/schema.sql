@@ -121,17 +121,15 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
 
--- OJO: al 24/09/2026 estos dos triggers NO están aplicados en la base (la
--- función existe pero no está conectada). Hoy el bloqueo post-cierre lo hace
--- solo el frontend. Para reactivarlo, correr:
---
--- CREATE TRIGGER trg_ventas_bloqueo_cierre
---   BEFORE INSERT OR UPDATE OR DELETE ON ventas
---   FOR EACH ROW EXECUTE FUNCTION bloquear_dia_cerrado();
---
--- CREATE TRIGGER trg_gastos_bloqueo_cierre
---   BEFORE INSERT OR UPDATE OR DELETE ON gastos
---   FOR EACH ROW EXECUTE FUNCTION bloquear_dia_cerrado();
+-- Activos en la base (verificado el 19/10/2026): para corregir un día cerrado
+-- hay que reabrirlo primero (reabrir_dia).
+CREATE TRIGGER trg_ventas_bloqueo_cierre
+  BEFORE INSERT OR UPDATE OR DELETE ON ventas
+  FOR EACH ROW EXECUTE FUNCTION bloquear_dia_cerrado();
+
+CREATE TRIGGER trg_gastos_bloqueo_cierre
+  BEFORE INSERT OR UPDATE OR DELETE ON gastos
+  FOR EACH ROW EXECUTE FUNCTION bloquear_dia_cerrado();
 
 -- Abre el día con la caja inicial (efectivo para dar vuelto). Si el día ya
 -- estaba abierto, pisa la caja inicial: sirve también para corregirla.

@@ -10,12 +10,13 @@ export function AbrirDia({ fecha }: { fecha: string }) {
   const [quedoAyer, setQuedoAyer] = useState<{ fecha: string; monto: number } | null>(null)
 
   // Lo que quedó en la caja al cerrar el último día es con lo que arranca hoy.
+  // Sin filtrar por cerrado: un día reabierto para corregir conserva su
+  // caja_final (uno que nunca se cerró no tiene).
   useEffect(() => {
     supabase
       .from('cierres')
       .select('fecha, caja_final')
       .lt('fecha', fecha)
-      .eq('cerrado', true)
       .not('caja_final', 'is', null)
       .order('fecha', { ascending: false })
       .limit(1)

@@ -1,4 +1,8 @@
+import { useCallback, useState } from 'react'
 import { useDiaCompleto } from '../hooks/useDiaCompleto'
+import { supabase } from '../lib/supabase'
+import { mensajeError } from '../lib/errors'
+import { avisoCajaInicial } from '../lib/avisoCajaInicial'
 import { formatMonto } from '../lib/format'
 import {
   DIAS_SEMANA,
@@ -9,6 +13,8 @@ import {
   sumarDias,
   type CierreStats,
 } from '../lib/estadisticas'
+import { ConfirmDialog } from './ConfirmDialog'
+import { CorregirDia } from './CorregirDia'
 import { DesgloseCuentas } from './DesgloseCuentas'
 import { SkeletonResumen } from './SkeletonLista'
 
@@ -17,8 +23,10 @@ function fechaCorta(fecha: string) {
   return `${dd}/${mm}/${yyyy}`
 }
 
-// Un día cualquiera, de solo lectura: totales, cada venta con su hora y la
-// comparación con el mismo día de la semana del año anterior.
+// Un día cualquiera: totales, cada venta con su hora y la comparación con el
+// mismo día de la semana del año anterior. Un día anterior cerrado se puede
+// reabrir acá mismo para corregirlo; mientras esté abierto se muestra para
+// editar (CorregirDia).
 export function DiaDetalle({
   fecha,
   onCambiarFecha,
@@ -30,12 +38,33 @@ export function DiaDetalle({
   cierres: CierreStats[]
   hoy: string
 }) {
-  const { ventas, gastos, cierre, loading } = useDiaCompleto(fecha)
+  const [recarga, setRecarga] = useState(0)
+  const { ventas, gastos, cierre, anterior: cierreAnterior, loading } = useDiaCompleto(fecha, recarga)
+  const [confirmandoCorregir, setConfirmandoCorregir] = useState(false)
+  const [reabriendo, setReabriendo] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const volverALeer = useCallback(() => setRecarga((n) => n + 1), [])
+
+  async function handleCorregir() {
+    setConfirmandoCorregir(false)
+    setReabriendo(true)
+    setError(null)
+    const { error: rpcError } = await supabase.rpc('reabrir_dia', { p_fecha: fecha })
+    setReabriendo(false)
+    if (rpcError) {
+      setError(mensajeError(rpcError))
+      return
+    }
+    volverALeer()
+  }
 
   const fechaAnterior = mismoDiaAnioAnterior(fecha)
   const anterior = cierres.find((c) => c.fecha === fechaAnterior)
   const nombreDia = DIAS_SEMANA[diaDeSemana(fecha)].toLowerCase()
   const cerrado = cierre?.cerrado ?? false
+  // El día de hoy se corrige desde la pestaña Hoy.
+  const corrigiendo = !!cierre && !cerrado && fecha < hoy
+  const avisoInicial = cierre ? avisoCajaInicial(cierre.caja_inicial, cierreAnterior) : null
   const variacion =
     cerrado && anterior && anterior.total_ventas > 0
       ? ((cierre!.total_ventas - anterior.total_ventas) / anterior.total_ventas) * 100
@@ -70,6 +99,8 @@ export function DiaDetalle({
         <SkeletonResumen />
       ) : !cierre ? (
         <p className="numeros-vacio">Ese día no se abrió la caja.</p>
+      ) : corrigiendo ? (
+        <CorregirDia key={fecha} fecha={fecha} onCerrado={volverALeer} />
       ) : (
         <>
           {cerrado ? (
@@ -111,6 +142,30 @@ export function DiaDetalle({
                   ? ` · ⚠ faltaron ${formatMonto(-(cierre.diferencia_caja ?? 0))}`
                   : ` · ⚠ sobraron ${formatMonto(cierre.diferencia_caja ?? 0)}`}
             </p>
+          )}
+
+          {avisoInicial && <p className="caja-no-coincide">{avisoInicial}</p>}
+
+          {cerrado && fecha < hoy && (
+            <>
+              {error && <p className="mensaje-error">{error}</p>}
+              <button
+                type="button"
+                className="dia-detalle-corregir"
+                onClick={() => setConfirmandoCorregir(true)}
+                disabled={reabriendo}
+              >
+                {reabriendo ? 'Reabriendo...' : 'Corregir este día'}
+              </button>
+            </>
+          )}
+          {confirmandoCorregir && (
+            <ConfirmDialog
+              mensaje="¿Reabrir este día para corregirlo? Cuando termines, volvé a confirmar el cierre."
+              confirmarTexto="Reabrir"
+              onConfirm={handleCorregir}
+              onCancel={() => setConfirmandoCorregir(false)}
+            />
           )}
         </>
       )}

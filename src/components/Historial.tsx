@@ -1,5 +1,6 @@
 import { useCierres } from '../hooks/useCierres'
 import { formatMonto } from '../lib/format'
+import { avisoCajaInicial } from '../lib/avisoCajaInicial'
 import { SkeletonLista } from './SkeletonLista'
 import type { CierreConEditor } from '../lib/types'
 
@@ -85,68 +86,73 @@ export function Historial({ onVerDia }: { onVerDia: (fecha: string) => void }) {
           <p>Todavía no hay cierres.</p>
         ) : (
           <ul className="dias-list">
-            {cierres.map((c) => (
-              <li key={c.id} className="dia-card">
-                <div className="dia-header">
-                  <span className="dia-fecha">{c.fecha}</span>
-                  <span className="dia-ganancia">{formatMonto(c.total_ventas)}</span>
-                </div>
-                <button type="button" className="link-accion dia-ver-detalle" onClick={() => onVerDia(c.fecha)}>
-                  Ver detalle
-                </button>
-                {c.reabierto_en && (
-                  <p className="editado-badge">
-                    ✎ Editado el{' '}
-                    {new Date(c.reabierto_en).toLocaleString('es-AR', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                    {c.usuarios_caja && ` por ${c.usuarios_caja.nombre}`}
-                  </p>
-                )}
-                <div className="stats-row stats-row--compacto">
-                  {Object.entries((c.totales_por_medio ?? {}) as Record<string, number>)
-                    .sort(([a], [b]) => a.localeCompare(b))
-                    .map(([medio, total]) => (
-                      <div className="stat" key={medio}>
-                        <span className="stat-label">{medio}</span>
-                        <span className="stat-valor">{formatMonto(total)}</span>
-                      </div>
-                    ))}
-                  <div className="stat">
-                    <span className="stat-label">Gastos</span>
-                    <span className="stat-valor">{formatMonto(c.total_gastos)}</span>
+            {cierres.map((c, i) => {
+              // La lista va del más nuevo al más viejo: el día anterior es el siguiente.
+              const avisoInicial = avisoCajaInicial(c.caja_inicial, cierres[i + 1])
+              return (
+                <li key={c.id} className="dia-card">
+                  <div className="dia-header">
+                    <span className="dia-fecha">{c.fecha}</span>
+                    <span className="dia-ganancia">{formatMonto(c.total_ventas)}</span>
                   </div>
-                  {c.caja_inicial != null && (
-                    <div className="stat">
-                      <span className="stat-label">Caja inicial</span>
-                      <span className="stat-valor">{formatMonto(c.caja_inicial)}</span>
-                    </div>
+                  <button type="button" className="link-accion dia-ver-detalle" onClick={() => onVerDia(c.fecha)}>
+                    Ver detalle
+                  </button>
+                  {c.reabierto_en && (
+                    <p className="editado-badge">
+                      ✎ Editado el{' '}
+                      {new Date(c.reabierto_en).toLocaleString('es-AR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                      {c.usuarios_caja && ` por ${c.usuarios_caja.nombre}`}
+                    </p>
                   )}
-                  {c.retiro != null && (
+                  <div className="stats-row stats-row--compacto">
+                    {Object.entries((c.totales_por_medio ?? {}) as Record<string, number>)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([medio, total]) => (
+                        <div className="stat" key={medio}>
+                          <span className="stat-label">{medio}</span>
+                          <span className="stat-valor">{formatMonto(total)}</span>
+                        </div>
+                      ))}
                     <div className="stat">
-                      <span className="stat-label">Se retiró</span>
-                      <span className="stat-valor">{formatMonto(c.retiro)}</span>
+                      <span className="stat-label">Gastos</span>
+                      <span className="stat-valor">{formatMonto(c.total_gastos)}</span>
                     </div>
+                    {c.caja_inicial != null && (
+                      <div className="stat">
+                        <span className="stat-label">Caja inicial</span>
+                        <span className="stat-valor">{formatMonto(c.caja_inicial)}</span>
+                      </div>
+                    )}
+                    {c.retiro != null && (
+                      <div className="stat">
+                        <span className="stat-label">Se retiró</span>
+                        <span className="stat-valor">{formatMonto(c.retiro)}</span>
+                      </div>
+                    )}
+                    {c.caja_final != null && (
+                      <div className="stat">
+                        <span className="stat-label">Quedó en caja</span>
+                        <span className="stat-valor">{formatMonto(c.caja_final)}</span>
+                      </div>
+                    )}
+                  </div>
+                  {c.retiro != null && Math.abs(c.diferencia_caja ?? 0) >= 0.01 && (
+                    <p className="caja-no-coincide">
+                      {(c.diferencia_caja ?? 0) < 0
+                        ? `⚠ Faltaron ${formatMonto(-(c.diferencia_caja ?? 0))} en la caja`
+                        : `⚠ Sobraron ${formatMonto(c.diferencia_caja ?? 0)} en la caja`}
+                    </p>
                   )}
-                  {c.caja_final != null && (
-                    <div className="stat">
-                      <span className="stat-label">Quedó en caja</span>
-                      <span className="stat-valor">{formatMonto(c.caja_final)}</span>
-                    </div>
-                  )}
-                </div>
-                {c.retiro != null && Math.abs(c.diferencia_caja ?? 0) >= 0.01 && (
-                  <p className="caja-no-coincide">
-                    {(c.diferencia_caja ?? 0) < 0
-                      ? `⚠ Faltaron ${formatMonto(-(c.diferencia_caja ?? 0))} en la caja`
-                      : `⚠ Sobraron ${formatMonto(c.diferencia_caja ?? 0)} en la caja`}
-                  </p>
-                )}
-              </li>
-            ))}
+                  {avisoInicial && <p className="caja-no-coincide">{avisoInicial}</p>}
+                </li>
+              )
+            })}
           </ul>
         )}
       </section>

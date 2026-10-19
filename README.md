@@ -23,7 +23,7 @@ App de cierre de caja diario para un local comercial: reemplaza la hoja del cuad
 - **Desglose de cada cuenta:** qué ventas está sumando la app en cada medio de pago, para controlarlo contra el papel
 - **Resumen del día como imagen** para mandar por WhatsApp (Web Share API), con la estética de la app
 - **Continuidad de la caja:** si un día quedó sin cerrar, la app obliga a cerrarlo con su arqueo antes de abrir el siguiente
-- **Reapertura** del día para corregir, con registro de quién y cuándo lo editó
+- **Corrección de días ya cerrados:** desde el detalle de cualquier día se lo reabre, se carga lo que faltó y se vuelve a cerrar con el arqueo precargado, con registro de quién y cuándo lo editó. Si al corregirlo cambia lo que quedó en la caja, el día siguiente avisa que su caja inicial no coincide
 - **Historial** de cierres agrupado por mes
 - **Números:** métricas del negocio para tomar decisiones (ver la sección de abajo)
 - Instalable como PWA en el celular
@@ -73,4 +73,4 @@ La base se arma con [`supabase/schema.sql`](supabase/schema.sql), que documenta 
 
 ## Estado del proyecto
 
-En uso real en el local. Pendiente: tests automatizados y volver a activar en la base el bloqueo de cambios sobre días cerrados (hoy lo impide solo el frontend).
+En uso real en el local. Pendiente: tests automatizados.
