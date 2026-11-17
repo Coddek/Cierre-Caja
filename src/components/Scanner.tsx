@@ -1,13 +1,24 @@
 import { useEffect, useRef, useState, type SubmitEvent } from 'react'
 import { codigoValido, limpiarCodigo } from '../lib/ean'
 
-type Lector = { detect: (fuente: HTMLVideoElement | HTMLCanvasElement) => Promise<{ rawValue: string }[]> }
+type Lector = { detect: (fuente: HTMLCanvasElement) => Promise<{ rawValue: string }[]> }
 
 const FORMATOS = ['ean_13', 'ean_8', 'upc_a', 'upc_e']
 
+/** Recuadro guía, en fracciones del visor (casi cuadrado: el código de estas cajas va parado). */
+const GUIA = { izq: 0.12, der: 0.88, arriba: 0.08, abajo: 0.92 }
+/** Lado mayor de cada cuadro que se analiza: más chico = más rápido en el celular. */
+const LADO_MAX = 1600
+/** Ventana para que el mismo número salga dos veces antes de aceptarlo. */
+const VENTANA_CONFIRMAR_MS = 2500
+/** Después de esto sin leer, se muestran consejos. */
+const CONSEJO_DESPUES_MS = 8000
+
 /**
  * Lector nativo del navegador si existe (Chrome en Android); si no (iPhone), el
- * de respaldo, que se descarga recién al abrir el escáner.
+ * de respaldo. Su motor (zxing_reader.wasm, ~1 MB) se sirve desde la propia app
+ * (public/) y se descarga recién al abrir el escáner. Si se actualiza la
+ * dependencia barcode-detector, copiar de nuevo node_modules/zxing-wasm/dist/reader/zxing_reader.wasm.
  */
 async function crearLector(): Promise<Lector> {
   const nativo = (globalThis as { BarcodeDetector?: { new (o: object): Lector; getSupportedFormats(): Promise<string[]> } })
@@ -19,19 +30,26 @@ async function crearLector(): Promise<Lector> {
       // sigue con el de respaldo
     }
   }
-  const { BarcodeDetector } = await import('barcode-detector/ponyfill')
+  const { BarcodeDetector, prepareZXingModule } = await import('barcode-detector/ponyfill')
+  await prepareZXingModule({
+    overrides: {
+      locateFile: (path: string, prefix: string) => (path.endsWith('.wasm') ? '/zxing_reader.wasm' : prefix + path),
+    },
+    fireImmediately: true,
+  })
   return new BarcodeDetector({ formats: FORMATOS as never })
 }
 
 /**
- * Cámara trasera + lectura del código de barras de la caja. Acepta un código
- * recién cuando lo lee dos veces igual y cierra el dígito de control. Siempre
- * se puede tipear el número de la etiqueta.
+ * Cámara trasera + lectura del código de barras de la caja. Se analiza lo que
+ * está dentro del recuadro (ampliado) y, alternando, todo el visor. Se acepta
+ * un número cuando sale dos veces igual y cierra el dígito de control; después igual se confirma
+ * el modelo en pantalla. Siempre se puede tipear el número de la etiqueta.
  * (Misma lógica que el editor de la tienda: tienda-martin/src/components/admin/Scanner.tsx.)
  */
 export function Scanner({ onDetectar }: { onDetectar: (codigo: string) => void }) {
   const video = useRef<HTMLVideoElement>(null)
-  const [estado, setEstado] = useState<'abriendo' | 'leyendo' | 'error'>('abriendo')
+  const [estado, setEstado] = useState<'abriendo' | 'leyendo' | 'lento' | 'error'>('abriendo')
   const [error, setError] = useState<string | null>(null)
   const [tipeado, setTipeado] = useState('')
   const [errorTipeado, setErrorTipeado] = useState<string | null>(null)
@@ -40,9 +58,9 @@ export function Scanner({ onDetectar }: { onDetectar: (codigo: string) => void }
   useEffect(() => {
     let stream: MediaStream | null = null
     let timer = 0
+    let timerConsejo = 0
     let cancelado = false
-    let ultimo = ''
-    let ultimoEn = 0
+    const vistos = new Map<string, number[]>()
 
     const terminar = (codigo: string) => {
       if (listo.current) return
@@ -63,43 +81,66 @@ export function Scanner({ onDetectar }: { onDetectar: (codigo: string) => void }
         if (cancelado || !video.current) return
         video.current.srcObject = stream
         await video.current.play()
-        const lector = await crearLector()
+        let lector: Lector
+        try {
+          lector = await crearLector()
+        } catch {
+          throw new Error('No se pudo cargar el lector. Revisá la conexión o tipeá el número de la etiqueta.')
+        }
         if (cancelado) return
         setEstado('leyendo')
-        // Un cuadro se lee entero y el siguiente solo el recuadro guía, ampliado:
-        // así se lee aunque la caja quede un poco lejos.
-        const zoom = document.createElement('canvas')
-        const zoomCtx = zoom.getContext('2d')
+        timerConsejo = window.setTimeout(() => {
+          if (!listo.current) setEstado('lento')
+        }, CONSEJO_DESPUES_MS)
+
+        const lienzo = document.createElement('canvas')
+        const ctx = lienzo.getContext('2d', { willReadFrequently: true })
         let cuadro = 0
         const leer = async () => {
-          if (cancelado || listo.current || !video.current) return
+          if (cancelado || listo.current || !video.current || !ctx) return
+          const v = video.current
           try {
-            const v = video.current
             if (v.readyState >= 2 && v.videoWidth) {
-              let fuente: HTMLVideoElement | HTMLCanvasElement = v
-              if (cuadro++ % 2 === 1 && zoomCtx) {
-                const sw = v.videoWidth * 0.8
-                const sh = v.videoHeight * 0.5
-                const escala = Math.min(2, 1600 / sw)
-                zoom.width = Math.round(sw * escala)
-                zoom.height = Math.round(sh * escala)
-                zoomCtx.imageSmoothingQuality = 'high'
-                zoomCtx.drawImage(v, (v.videoWidth - sw) / 2, (v.videoHeight - sh) / 2, sw, sh, 0, 0, zoom.width, zoom.height)
-                fuente = zoom
-              }
-              const encontrados = await lector.detect(fuente)
+              // Qué parte del video se ve en el visor (object-fit: cover recorta los bordes).
+              const caja = v.getBoundingClientRect()
+              const escala = Math.max(caja.width / v.videoWidth, caja.height / v.videoHeight)
+              const visAncho = caja.width / escala
+              const visAlto = caja.height / escala
+              const visX = (v.videoWidth - visAncho) / 2
+              const visY = (v.videoHeight - visAlto) / 2
+              // Un cuadro el recuadro guía, el siguiente todo lo visible.
+              const zona =
+                cuadro++ % 2 === 0
+                  ? {
+                      x: visX + visAncho * GUIA.izq,
+                      y: visY + visAlto * GUIA.arriba,
+                      w: visAncho * (GUIA.der - GUIA.izq),
+                      h: visAlto * (GUIA.abajo - GUIA.arriba),
+                    }
+                  : { x: visX, y: visY, w: visAncho, h: visAlto }
+              const k = Math.min(2, LADO_MAX / Math.max(zona.w, zona.h))
+              lienzo.width = Math.round(zona.w * k)
+              lienzo.height = Math.round(zona.h * k)
+              ctx.imageSmoothingQuality = 'high'
+              ctx.drawImage(v, zona.x, zona.y, zona.w, zona.h, 0, 0, lienzo.width, lienzo.height)
+              const encontrados = await lector.detect(lienzo)
               const codigo = encontrados.map((e) => limpiarCodigo(e.rawValue)).find(codigoValido)
               if (codigo) {
+                // Se acepta recién cuando el mismo número sale dos veces en 2,5 s
+                // (con cuadros sin lectura en el medio, no importa). Probado con
+                // las etiquetas: una lectura suelta puede ser un número equivocado
+                // que igual cierra el dígito de control.
                 const ahora = performance.now()
-                if (codigo === ultimo && ahora - ultimoEn < 1500) terminar(codigo)
-                ultimo = codigo
-                ultimoEn = ahora
+                const veces = (vistos.get(codigo) ?? []).filter((t) => ahora - t < VENTANA_CONFIRMAR_MS)
+                veces.push(ahora)
+                vistos.set(codigo, veces)
+                if (veces.length >= 2) terminar(codigo)
               }
             }
           } catch {
             // un cuadro que no se pudo leer: se prueba con el siguiente
           }
-          timer = window.setTimeout(leer, 180)
+          timer = window.setTimeout(leer, 60)
         }
         leer()
       } catch (e) {
@@ -119,6 +160,7 @@ export function Scanner({ onDetectar }: { onDetectar: (codigo: string) => void }
     return () => {
       cancelado = true
       window.clearTimeout(timer)
+      window.clearTimeout(timerConsejo)
       stream?.getTracks().forEach((t) => t.stop())
     }
   }, [onDetectar])
@@ -134,19 +176,36 @@ export function Scanner({ onDetectar }: { onDetectar: (codigo: string) => void }
     onDetectar(codigo)
   }
 
+  const mensaje =
+    estado === 'abriendo'
+      ? 'Abriendo la cámara y el lector…'
+      : estado === 'leyendo'
+        ? 'Poné el código de barras adentro del recuadro, a unos 15 cm.'
+        : estado === 'lento'
+          ? 'Todavía no lee: acercá o alejá el celular hasta que el código se vea nítido y grande en el recuadro, con buena luz y sin reflejo. O tipeá los números abajo.'
+          : error
+
   return (
     <div className="scanner">
       <div className="scanner-video">
         <video ref={video} playsInline muted />
-        {estado === 'leyendo' && <div className="scanner-guia" aria-hidden="true" />}
-        <p className="scanner-estado">
-          {estado === 'abriendo'
-            ? 'Abriendo la cámara…'
-            : estado === 'leyendo'
-              ? 'Apuntá al código de barras de la caja, a un palmo.'
-              : error}
-        </p>
+        {(estado === 'leyendo' || estado === 'lento') && (
+          <div
+            className="scanner-guia"
+            aria-hidden="true"
+            style={{
+              left: `${GUIA.izq * 100}%`,
+              right: `${(1 - GUIA.der) * 100}%`,
+              top: `${GUIA.arriba * 100}%`,
+              bottom: `${(1 - GUIA.abajo) * 100}%`,
+            }}
+          />
+        )}
       </div>
+      {/* Debajo del visor, no encima: así no tapa la etiqueta. */}
+      <p aria-live="polite" className={estado === 'lento' || estado === 'error' ? 'scanner-estado scanner-estado--aviso' : 'scanner-estado'}>
+        {mensaje}
+      </p>
 
       <form onSubmit={usarTipeado} className="scanner-manual">
         <label htmlFor="codigo-manual">¿No lee? Tipeá los números de la etiqueta</label>

@@ -1877,7 +1877,11 @@ hr {
 
 .scanner-video {
   position: relative;
-  aspect-ratio: 4 / 3;
+  /* Vertical, como la cámara del celular en la mano. */
+  aspect-ratio: 3 / 4;
+  max-height: 58dvh;
+  margin: 0 auto;
+  width: 100%;
   overflow: hidden;
   border-radius: 12px;
   background: var(--ink);
@@ -1892,10 +1896,6 @@ hr {
 
 .scanner-guia {
   position: absolute;
-  left: 11%;
-  right: 11%;
-  top: 29%;
-  bottom: 29%;
   border: 2px solid #c8a662;
   border-radius: 10px;
   box-shadow: 0 0 0 9999px rgba(18, 50, 35, 0.35);
@@ -1903,16 +1903,16 @@ hr {
 }
 
 .scanner-estado {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  margin: 0;
-  padding: 8px 12px;
-  background: rgba(18, 50, 35, 0.75);
-  color: var(--paper);
+  margin: -4px 0 0;
+  color: var(--ink-soft);
   font-size: 13px;
+  line-height: 1.4;
   text-align: center;
+}
+
+.scanner-estado--aviso {
+  color: var(--rust);
+  font-weight: 600;
 }
 
 .scanner-manual {
