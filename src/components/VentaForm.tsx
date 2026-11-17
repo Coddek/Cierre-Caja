@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from 'react'
 import { supabase } from '../lib/supabase'
 import { mensajeError } from '../lib/errors'
+import { formatMonto } from '../lib/format'
+import { descripcionPares, sumaPares, type ParVendido } from '../lib/pares'
 import { useMediosPago } from '../hooks/useMediosPago'
 import { useMarcas } from '../hooks/useMarcas'
+import { EscanearPar } from './EscanearPar'
 import { MarcaInput } from './MarcaInput'
 
 export function VentaForm({ fecha, onSuccess }: { fecha: string; onSuccess: () => void }) {
@@ -17,8 +20,31 @@ export function VentaForm({ fecha, onSuccess }: { fecha: string; onSuccess: () =
   const [monto2, setMonto2] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // Pares escaneados: al guardar se descuentan del stock de la tienda.
+  const [pares, setPares] = useState<ParVendido[]>([])
+  const [escaneando, setEscaneando] = useState(false)
 
   const medioPagoActual = medioPago || medios[0] || ''
+
+  // El monto se completa con la suma de los pares, salvo que lo hayan cambiado
+  // a mano (por un descuento): en ese caso se respeta lo que pusieron.
+  function cambiarPares(siguientes: ParVendido[]) {
+    const montoAutomatico = monto === '' || Number(monto) === sumaPares(pares)
+    setPares(siguientes)
+    if (montoAutomatico) setMonto(siguientes.length ? String(sumaPares(siguientes)) : '')
+  }
+
+  if (escaneando) {
+    return (
+      <EscanearPar
+        onAgregar={(par) => {
+          cambiarPares([...pares, par])
+          setEscaneando(false)
+        }}
+        onCancelar={() => setEscaneando(false)}
+      />
+    )
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -48,14 +74,27 @@ export function VentaForm({ fecha, onSuccess }: { fecha: string; onSuccess: () =
     }
 
     setSaving(true)
-    const { error: insertError } = await supabase.from('ventas').insert({
+    const venta = {
       fecha,
       monto: montoNum,
       medio_pago: medioPagoActual,
-      descripcion: descripcion.trim() || null,
+      // Sin descripción escrita, se describe con los pares vendidos.
+      descripcion: descripcion.trim() || (pares.length ? descripcionPares(pares) : null),
       medio_pago_2: dividido ? medioPago2 : null,
       monto_2: dividido ? montoNum2 : null,
-    })
+    }
+    // Con pares: venta y descuento de stock en un solo paso (si algo falla, no se guarda nada).
+    const { error: insertError } = pares.length
+      ? await supabase.rpc('tienda_registrar_venta', {
+          p_fecha: venta.fecha,
+          p_monto: venta.monto,
+          p_medio_pago: venta.medio_pago,
+          p_descripcion: venta.descripcion,
+          p_medio_pago_2: venta.medio_pago_2,
+          p_monto_2: venta.monto_2,
+          p_talles: pares.map((p) => p.talleId),
+        })
+      : await supabase.from('ventas').insert(venta)
     setSaving(false)
 
     if (insertError) {
@@ -67,6 +106,7 @@ export function VentaForm({ fecha, onSuccess }: { fecha: string; onSuccess: () =
     // hook useVentasHoy va a traer esta venta apenas Postgres confirme el insert.
     setMonto('')
     setDescripcion('')
+    setPares([])
     setDividido(false)
     setMedioPago2('')
     setMonto2('')
@@ -75,6 +115,36 @@ export function VentaForm({ fecha, onSuccess }: { fecha: string; onSuccess: () =
 
   return (
     <form onSubmit={handleSubmit} className="form-carga">
+      <div className="pares-venta">
+        {pares.length > 0 && (
+          <ul>
+            {pares.map((par, i) => (
+              <li key={`${par.talleId}-${i}`}>
+                <span>
+                  <strong>
+                    {par.producto} · T{par.talle}
+                  </strong>
+                  <small>
+                    {par.color} · {formatMonto(par.precio)}
+                    {par.sinStock && <em> · figuraba sin stock</em>}
+                  </small>
+                </span>
+                <button
+                  type="button"
+                  aria-label={`Quitar ${par.producto} talle ${par.talle}`}
+                  onClick={() => cambiarPares(pares.filter((_, j) => j !== i))}
+                >
+                  ✕
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button type="button" className="btn-escanear" onClick={() => setEscaneando(true)}>
+          {pares.length ? 'Escanear otro par' : 'Escanear par'}
+        </button>
+      </div>
+
       <label className="campo-monto">
         <span>Monto</span>
         <div className="input-monto-wrap">
@@ -145,7 +215,7 @@ export function VentaForm({ fecha, onSuccess }: { fecha: string; onSuccess: () =
           value={descripcion}
           onChange={setDescripcion}
           opciones={marcas}
-          placeholder="Marca, seña, lo que sea..."
+          placeholder={pares.length ? descripcionPares(pares) : 'Marca, seña, lo que sea...'}
         />
       </label>
 

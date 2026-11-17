@@ -317,3 +317,10 @@ REVOKE EXECUTE ON FUNCTION abrir_dia(DATE, NUMERIC) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION reabrir_dia(DATE) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION is_usuario_caja(UUID) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION bloquear_dia_cerrado() FROM PUBLIC, anon, authenticated;
+
+-- ---------- STOCK DE LA TIENDA (otro repo, mismo proyecto) ----------
+-- "Escanear par" en la venta usa funciones que viven en
+-- tienda-martin/supabase/tienda.sql: tienda_registrar_venta (guarda la venta y
+-- descuenta los pares en un paso), tienda_buscar_codigo, tienda_buscar_modelos,
+-- y el trigger trg_tienda_devolver_pares BEFORE DELETE ON ventas (si se borra
+-- una venta, sus pares vuelven al stock). Si se cambia ventas, revisar ese archivo.

@@ -375,6 +375,28 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      // Stock de la tienda (tienda-martin/supabase/tienda.sql). Agregadas a mano:
+      // devuelven JSON, que se lee con leerEncontrados (src/lib/pares.ts).
+      tienda_buscar_codigo: {
+        Args: { p_codigo: string }
+        Returns: Json
+      }
+      tienda_buscar_modelos: {
+        Args: { p_texto: string }
+        Returns: Json
+      }
+      tienda_registrar_venta: {
+        Args: {
+          p_fecha: string
+          p_monto: number
+          p_medio_pago: string
+          p_descripcion: string | null
+          p_medio_pago_2: string | null
+          p_monto_2: number | null
+          p_talles: string[]
+        }
+        Returns: string
+      }
       ventas_por_hora: {
         Args: { p_desde: string }
         Returns: {
